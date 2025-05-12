@@ -206,17 +206,15 @@ class SavantEnergyScenesCard extends HTMLElement {
     const style = `
       <style>
         .card { font-family: var(--primary-font-family); background: var(--card-background-color, #fff); border-radius: 12px; box-shadow: var(--ha-card-box-shadow); padding: 20px; }
-        .header { font-size: 1.3em; font-weight: bold; margin-bottom: 12px; }
-        .pill-toggle { 
+        .header { font-size: 1.3em; font-weight: bold; margin-bottom: 12px; }        .pill-toggle { 
           display: flex; 
-          margin-bottom: 16px;
+          margin: 0 auto 16px auto;
           background: #f0f0f0;
           border-radius: 999px;
           padding: 4px;
           border: 1px solid #ddd;
-          width: fit-content;
-        }
-        .pill {
+          width: 100%;
+        }        .pill {
           border-radius: 999px;
           padding: 8px 24px;
           font-weight: 500;
@@ -224,6 +222,9 @@ class SavantEnergyScenesCard extends HTMLElement {
           transition: background 0.2s, color 0.2s;
           text-align: center;
           flex: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
         .pill.selected {
           background: var(--primary-color, #03a9f4);
