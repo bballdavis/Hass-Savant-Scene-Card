@@ -22,18 +22,16 @@ class SavantEnergyScenesCard extends HTMLElement {
     this._isRendering = false;
     this._pendingRender = false;
     this._hasInitialRender = false; // Track initial render
-    
-    // Create an initial empty card
+      // Create an initial empty card
     this.shadowRoot.innerHTML = `
-      <ha-card header="Savant Energy Scenes">
+      <ha-card header="Savant Energy Scenes Standalone">
         <div class="card-content">Loading...</div>
       </ha-card>
     `;
   }
-  
-  // This is called by Lovelace when the configuration changes
+    // This is called by Lovelace when the configuration changes
   static getConfigElement() {
-    return document.createElement("savant-energy-scenes-card-editor");
+    return document.createElement("savant-energy-scenes-standalone-card-editor");
   }
 
   // This is called by Lovelace to get the card name for display in the Add Card UI
@@ -68,10 +66,9 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (Object.keys(this._relayStates).length === 0 && entities.length > 0) {
       entities.forEach(ent => this._relayStates[ent.entity_id] = true);
     }
-      
-    // Always render on first update, otherwise only when needed
+        // Always render on first update, otherwise only when needed
     if (firstUpdate || !this._hasInitialRender) {
-      console.log("Savant Energy Scenes: Initial render", 
+      console.log("Savant Energy Scenes Standalone: Initial render", 
           {entities: entities.length, scenes: scenes.length});
       this._safeRender();
     }
@@ -86,11 +83,10 @@ class SavantEnergyScenesCard extends HTMLElement {
     try {
       this.render();
       this._hasInitialRender = true;
-    } catch (error) {
-      console.error("Error rendering Savant Energy Scenes card:", error);
+    } catch (error) {      console.error("Error rendering Savant Energy Scenes Standalone card:", error);
       // Fallback for render errors
       this.shadowRoot.innerHTML = `
-        <ha-card header="Savant Energy Scenes">
+        <ha-card header="Savant Energy Scenes Standalone">
           <div class="card-content">
             <p>Error rendering card. Check the browser console for details.</p>
           </div>
@@ -197,12 +193,11 @@ class SavantEnergyScenesCard extends HTMLElement {
       this._showToast("Error saving scene: " + error.message);
     }
   }
-
   _showToast(message) {
     this._hass.callService("persistent_notification", "create", {
       message,
-      title: "Savant Energy Scenes",
-      notification_id: "savant_scene_notification"
+      title: "Savant Energy Scenes Standalone",
+      notification_id: "savant_scene_standalone_notification"
     });
   }
 
@@ -295,12 +290,11 @@ class SavantEnergyScenesCard extends HTMLElement {
           `).join("")}
         </div>
       `;
-    }
-    this.shadowRoot.innerHTML = `
+    }    this.shadowRoot.innerHTML = `
       <ha-card>
         ${style}
         <div class="card">
-          <div class="header">Savant Energy Scenes</div>
+          <div class="header">Savant Energy Scenes Standalone</div>
           ${pillToggle}
           ${content || '<div class="card-content">No content available</div>'}
         </div>
@@ -375,10 +369,9 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
         .side-by-side > * {
           flex: 1;
           padding-right: 4px;
-        }
-      </style>
+        }      </style>
       <div>
-        <p>Savant Energy Scenes Card has no configuration options.</p>
+        <p>Savant Energy Scenes Standalone Card has no configuration options.</p>
         <p>This card provides an interface for managing Savant Energy scenes.</p>
       </div>
     `;
@@ -392,11 +385,11 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
 // Add card to the custom cards list for discovery
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "savant-energy-scenes-card",
+  type: "savant-energy-scenes-standalone-card",
   name: "Savant Energy Scenes Standalone Card",
   description: "A custom standalone card for Savant Energy scenes."
 });
 
 // Register the custom element with the browser
-customElements.define("savant-energy-scenes-card", SavantEnergyScenesCard);
-customElements.define("savant-energy-scenes-card-editor", SavantEnergyScenesCardEditor);
+customElements.define("savant-energy-scenes-standalone-card", SavantEnergyScenesCard);
+customElements.define("savant-energy-scenes-standalone-card-editor", SavantEnergyScenesCardEditor);

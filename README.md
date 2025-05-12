@@ -46,7 +46,7 @@ Add the card to your dashboard:
 Or add it manually to your Lovelace configuration:
 
 ```yaml
-type: custom:savant-energy-scenes-card
+type: custom:savant-energy-scenes-standalone-card
 ```
 
 ## Requirements
