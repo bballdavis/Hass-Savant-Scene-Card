@@ -1,16 +1,18 @@
-// Savant Energy Scenes Card v1.1.0
+// Savant Energy Scenes Standalone Card v1.1.0
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-CARD %c v1.1.0 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.0 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
 
-class SavantEnergyScenesCard extends HTMLElement {  constructor() {
+class SavantEnergyScenesCard extends HTMLElement {  
+  constructor() {
     super();
     this.attachShadow({ mode: "open" });
     this._hass = null;
+    this._config = {};
     this._entities = [];
     this._scenes = [];
     this._selectedScene = null;
@@ -28,6 +30,18 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
       </ha-card>
     `;
   }
+  
+  // This is called by Lovelace when the configuration changes
+  static getConfigElement() {
+    return document.createElement("savant-energy-scenes-card-editor");
+  }
+
+  // This is called by Lovelace to get the card name for display in the Add Card UI
+  static getStubConfig() {
+    return {};
+  }
+
+  // This is called whenever Home Assistant state changes
   set hass(hass) {
     const firstUpdate = this._hass === null;
     this._hass = hass;
@@ -61,7 +75,9 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
           {entities: entities.length, scenes: scenes.length});
       this._safeRender();
     }
-  }  _safeRender() {
+  }
+
+  _safeRender() {
     if (this._isRendering) {
       this._pendingRender = true;
       return;
@@ -117,6 +133,7 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
     this._relayStates[entity_id] = !this._relayStates[entity_id];
     this._safeRender();
   }
+
   _onSceneSelect(e) {
     const sceneId = e.target.value;
     this._selectedScene = sceneId;
@@ -194,7 +211,8 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
     const style = `
       <style>
         .card { font-family: var(--primary-font-family); background: var(--card-background-color, #fff); border-radius: 12px; box-shadow: var(--ha-card-box-shadow); padding: 20px; }
-        .header { font-size: 1.3em; font-weight: bold; margin-bottom: 12px; }        .pill-toggle { 
+        .header { font-size: 1.3em; font-weight: bold; margin-bottom: 12px; }
+        .pill-toggle { 
           display: flex; 
           margin-bottom: 16px;
           background: #f0f0f0;
@@ -216,7 +234,8 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
           background: var(--primary-color, #03a9f4);
           color: #fff;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }        .switch-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+        }
+        .switch-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
         .switch-item { display: flex; align-items: center; background: #f5f5f5; border-radius: 8px; padding: 6px 12px; }
         .switch-label { margin-left: 8px; }
         .scene-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
@@ -237,7 +256,8 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
         <div class="pill${this._view === 'editor' ? ' selected' : ''}" data-view="editor">Editor</div>
       </div>
     `;
-    let content = "";    if (this._view === "scenes") {
+    let content = "";
+    if (this._view === "scenes") {
       content = `
         <div class="scene-controls">
           <input class="input" type="text" placeholder="New scene name" value="${this._sceneName}">
@@ -256,7 +276,8 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
             </ul>`
           }
         </div>
-      `;    } else if (this._view === "editor") {
+      `;
+    } else if (this._view === "editor") {
       content = `
         <div class="scene-controls">
           <select class="scene-select input">
@@ -274,7 +295,8 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
           `).join("")}
         </div>
       `;
-    }    this.shadowRoot.innerHTML = `
+    }
+    this.shadowRoot.innerHTML = `
       <ha-card>
         ${style}
         <div class="card">
@@ -290,7 +312,8 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
         const view = pill.getAttribute('data-view');
         this._setView(view);
       });
-    });    // Scenes view events
+    });
+    // Scenes view events
     if (this._view === 'scenes') {
       this.shadowRoot.querySelector('input[type=text]').addEventListener('input', e => this._onSceneNameChange(e));
       this.shadowRoot.querySelector('button').addEventListener('click', () => this._onCreateScene());
@@ -300,7 +323,8 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
           this._onDeleteScene(id);
         });
       });
-    }    // Editor view events
+    }
+    // Editor view events
     if (this._view === 'editor') {
       this.shadowRoot.querySelector('select').addEventListener('change', e => this._onSceneSelect(e));
       this.shadowRoot.querySelector('button').addEventListener('click', () => this._onSaveEditor());
@@ -310,23 +334,69 @@ class SavantEnergyScenesCard extends HTMLElement {  constructor() {
     }
   }
 
+  // Called by Lovelace when the card configuration changes
   setConfig(config) {
     if (!config) {
       throw new Error("No configuration provided");
     }
     this._config = config;
+    this._safeRender();
   }
 
-  getCardSize() { return 3; }
+  // Return the card size (height in units) for proper Lovelace grid placement
+  getCardSize() { 
+    return 3; 
+  }
+}
+
+// Define the configuration editor element
+class SavantEnergyScenesCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config || {};
+  }
+
+  get _config() {
+    return this._config;
+  }
+
+  render() {
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+    }
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        ha-switch {
+          padding: 16px 0;
+        }
+        .side-by-side {
+          display: flex;
+        }
+        .side-by-side > * {
+          flex: 1;
+          padding-right: 4px;
+        }
+      </style>
+      <div>
+        <p>Savant Energy Scenes Card has no configuration options.</p>
+        <p>This card provides an interface for managing Savant Energy scenes.</p>
+      </div>
+    `;
+  }
+
+  connectedCallback() {
+    this.render();
+  }
 }
 
 // Add card to the custom cards list for discovery
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "savant-energy-scenes-card",
-  name: "Savant Energy Scenes Card",
-  description: "A custom card for Savant Energy scenes."
+  name: "Savant Energy Scenes Standalone Card",
+  description: "A custom standalone card for Savant Energy scenes."
 });
 
 // Register the custom element with the browser
 customElements.define("savant-energy-scenes-card", SavantEnergyScenesCard);
+customElements.define("savant-energy-scenes-card-editor", SavantEnergyScenesCardEditor);

@@ -1,8 +1,8 @@
-# Savant Energy Scenes Card
+# Savant Energy Scenes Standalone Card
 
 A custom Lovelace card for Home Assistant that provides an interface for managing Savant Energy scenes.
 
-![Screenshot of the Savant Energy Scenes Card](https://raw.githubusercontent.com/YOUR_USERNAME/Hass-Savant-Scene-Card/main/screenshot.png)
+![Screenshot of the Savant Energy Scenes Standalone Card](https://raw.githubusercontent.com/YOUR_USERNAME/Hass-Savant-Scene-Card/main/screenshot.png)
 
 ## Features
 
