@@ -39,38 +39,46 @@ class SavantEnergyScenesCard extends HTMLElement {
     return {};
   }
 
+  async _fetchScenesFromBackend() {
+    // Call the backend service to get scenes
+    try {
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "get_scenes",
+        service_data: {}
+      });
+      // The backend should return { scenes: [...] }
+      if (result && result.scenes) {
+        this._scenes = result.scenes.map(s => ({
+          id: s.id,
+          entity_id: s.entity_id,
+          name: s.name,
+          relay_states: s.relay_states || {}
+        }));
+      } else {
+        this._scenes = [];
+      }
+    } catch (e) {
+      this._scenes = [];
+    }
+    this._safeRender();
+  }
+
   // This is called whenever Home Assistant state changes
   set hass(hass) {
     const firstUpdate = this._hass === null;
     this._hass = hass;
-    
-    // Get entities and scenes
+    // Get breaker entities as before
     const entities = Object.values(hass.states)
       .filter(e => e.entity_id.startsWith("switch.") && 
               e.attributes.device_class === "switch" && 
               e.attributes.friendly_name && 
               (e.entity_id.includes("savant") || e.entity_id.includes("breaker")));
-    const scenes = Object.values(hass.states)
-      .filter(e => e.entity_id.startsWith("button.savant_energy_scene_"))
-      .map(e => ({
-        id: e.entity_id.replace("button.savant_energy_scene_", "scene_"),
-        entity_id: e.entity_id,
-        name: e.attributes.friendly_name,
-      }));
-      
-    // Update entities and scenes
     this._entities = entities;
-    this._scenes = scenes;
-    
-    // Initialize relay states if they're empty (for new scenes)
-    if (Object.keys(this._relayStates).length === 0 && entities.length > 0) {
-      entities.forEach(ent => this._relayStates[ent.entity_id] = true);
-    }
-        // Always render on first update, otherwise only when needed
+    // Always fetch scenes from backend
     if (firstUpdate || !this._hasInitialRender) {
-      console.log("Savant Energy Scenes Standalone: Initial render", 
-          {entities: entities.length, scenes: scenes.length});
-      this._safeRender();
+      this._fetchScenesFromBackend();
     }
   }
 
@@ -149,33 +157,32 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
-      // Call the backend to create the scene
-      await this._hass.callService("savant_energy", "create_scene", {
-        name: this._sceneName.trim(),
-        relay_states: this._entities.reduce((acc, ent) => {
-          acc[ent.attributes.friendly_name] = true;
-          return acc;
-        }, {})
+      // Use callService and then fetch the result from the integration API
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "create_scene",
+        service_data: {
+          name: this._sceneName.trim(),
+          relay_states: this._entities.reduce((acc, ent) => {
+            acc[ent.entity_id] = true;
+            return acc;
+          }, {})
+        }
       });
-      // Optimistically add the new scene to the list
-      const newId = `scene_${this._sceneName.trim().toLowerCase().replace(/\s+/g, '_')}`;
-      const newScene = {
-        id: newId,
-        entity_id: `button.savant_energy_scene_${this._sceneName.trim().toLowerCase().replace(/\s+/g, '_')}`,
-        name: this._sceneName.trim(),
-      };
-      this._scenes.push(newScene);
-      // Optionally, set all relays ON for the new scene
-      this._relayStates = Object.assign({}, ...this._entities.map(ent => ({ [ent.entity_id]: true })));
-      // Save all scenes to backend for integration access
-      await this._hass.callService("savant_energy", "save_scenes", {
-        scenes: this._scenes
-      });
-      this._showToast(`Scene "${this._sceneName}" created successfully`);
-      this._sceneName = "";
-      this._safeRender();
+      if (result && result.status === "error") {
+        this._showToast(result.message || "Error creating scene.");
+        return;
+      }
+      if (result && result.status === "ok") {
+        this._showToast(`Scene "${this._sceneName}" created successfully`);
+        this._sceneName = "";
+        setTimeout(() => this._fetchScenesFromBackend(), 800);
+      } else {
+        this._showToast("Unknown error creating scene.");
+      }
     } catch (error) {
-      this._showToast("Error creating scene: " + error.message);
+      this._showToast("Error creating scene: " + (error.message || error));
     }
   }
 
@@ -185,7 +192,7 @@ class SavantEnergyScenesCard extends HTMLElement {
         scene_id: sceneId
       });
       this._showToast(`Scene deleted successfully`);
-      setTimeout(() => this._safeRender(), 500);
+      setTimeout(() => this._fetchScenesFromBackend(), 800);
     } catch (error) {
       this._showToast("Error deleting scene: " + error.message);
     }
@@ -203,11 +210,12 @@ class SavantEnergyScenesCard extends HTMLElement {
         }, {})
       });
       this._showToast(`Scene updated successfully`);
-      setTimeout(() => this._safeRender(), 500);
+      setTimeout(() => this._fetchScenesFromBackend(), 800);
     } catch (error) {
       this._showToast("Error saving scene: " + error.message);
     }
   }
+
   _showToast(message) {
     this._hass.callService("persistent_notification", "create", {
       message,
