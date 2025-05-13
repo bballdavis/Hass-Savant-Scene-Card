@@ -149,7 +149,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
-      // Call the backend
+      // Call the backend to create the scene
       await this._hass.callService("savant_energy", "create_scene", {
         name: this._sceneName.trim(),
         relay_states: this._entities.reduce((acc, ent) => {
@@ -159,13 +159,18 @@ class SavantEnergyScenesCard extends HTMLElement {
       });
       // Optimistically add the new scene to the list
       const newId = `scene_${this._sceneName.trim().toLowerCase().replace(/\s+/g, '_')}`;
-      this._scenes.push({
+      const newScene = {
         id: newId,
         entity_id: `button.savant_energy_scene_${this._sceneName.trim().toLowerCase().replace(/\s+/g, '_')}`,
         name: this._sceneName.trim(),
-      });
+      };
+      this._scenes.push(newScene);
       // Optionally, set all relays ON for the new scene
       this._relayStates = Object.assign({}, ...this._entities.map(ent => ({ [ent.entity_id]: true })));
+      // Save all scenes to backend for integration access
+      await this._hass.callService("savant_energy", "save_scenes", {
+        scenes: this._scenes
+      });
       this._showToast(`Scene "${this._sceneName}" created successfully`);
       this._sceneName = "";
       this._safeRender();
@@ -280,6 +285,7 @@ class SavantEnergyScenesCard extends HTMLElement {
         .scene-name-input {
           flex: 1 1 0%;
           min-width: 0;
+          width: 100%;
         }
         .scene-select {
           flex: 1;
