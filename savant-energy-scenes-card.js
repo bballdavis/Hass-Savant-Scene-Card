@@ -40,15 +40,11 @@ class SavantEnergyScenesCard extends HTMLElement {
   }
 
   async _fetchScenesFromBackend() {
-    // Call the backend service to get scenes (metadata only)
+    // Fetch scenes using the REST API only
     try {
-      const result = await this._hass.callWS({
-        type: "call_service",
-        domain: "savant_energy",
-        service: "get_scenes",
-        service_data: {}
-      });
-      console.info("[Savant Card] Raw get_scenes API response:", result);
+      const resp = await fetch("/savant_energy/scenes", { credentials: "same-origin" });
+      const result = await resp.json();
+      console.info("[Savant Card] Raw get_scenes API response (REST):", result);
       if (result && Array.isArray(result.scenes)) {
         // result.scenes: [ { scene_id, name } ]
         this._scenes = result.scenes.map(s => ({
@@ -62,13 +58,13 @@ class SavantEnergyScenesCard extends HTMLElement {
       }
     } catch (e) {
       this._scenes = [];
-      console.error("[Savant Card] Error fetching scenes from backend:", e);
+      console.error("[Savant Card] Error fetching scenes from backend (REST):", e);
     }
     this._safeRender();
   }
 
   async _fetchBreakersForEditor(sceneId) {
-    // Fetch the list of breakers and their states for the editor view for a specific scene
+    // Fetch the list of breakers and their states for the editor view for a specific scene using REST API only
     if (!sceneId) {
       this._entities = [];
       this._relayStates = {};
@@ -76,12 +72,9 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
-      const result = await this._hass.callWS({
-        type: "call_service",
-        domain: "savant_energy",
-        service: "get_scene_breakers",
-        service_data: { scene_id: sceneId }
-      });
+      const resp = await fetch(`/savant_energy/scene_breakers/${sceneId}`, { credentials: "same-origin" });
+      const result = await resp.json();
+      console.info(`[Savant Card] Raw get_scene_breakers API response (REST) for scene '${sceneId}':`, result);
       if (result && result.breakers && typeof result.breakers === 'object') {
         // result.breakers: { entity_id: boolean }
         this._entities = Object.keys(result.breakers).map(entity_id => ({
@@ -93,12 +86,12 @@ class SavantEnergyScenesCard extends HTMLElement {
       } else {
         this._entities = [];
         this._relayStates = {};
-        console.warn("[Savant Card] No breakers returned from backend.");
+        console.warn(`[Savant Card] No breakers returned from backend for scene '${sceneId}'.`);
       }
     } catch (e) {
       this._entities = [];
       this._relayStates = {};
-      console.error("[Savant Card] Error fetching breakers from backend:", e);
+      console.error(`[Savant Card] Error fetching breakers from backend (REST) for scene '${sceneId}':`, e);
     }
     this._safeRender();
   }
