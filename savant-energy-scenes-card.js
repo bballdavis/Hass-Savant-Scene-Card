@@ -48,13 +48,12 @@ class SavantEnergyScenesCard extends HTMLElement {
         service: "get_scenes",
         service_data: {}
       });
-      // The backend should return { scenes: [...] }
-      if (result && result.scenes) {
-        this._scenes = result.scenes.map(s => ({
-          id: s.id,
-          entity_id: s.entity_id,
+      if (result && result.scenes && typeof result.scenes === 'object') {
+        this._scenes = Object.entries(result.scenes).map(([id, s]) => ({
+          id,
           name: s.name,
-          relay_states: s.relay_states || {}
+          relay_states: s.relay_states || {},
+          entity_id: s.entity_id || undefined
         }));
         console.info(`[Savant Card] Retrieved ${this._scenes.length} scenes from backend:`, this._scenes);
       } else {
@@ -68,18 +67,62 @@ class SavantEnergyScenesCard extends HTMLElement {
     this._safeRender();
   }
 
-  // This is called whenever Home Assistant state changes
+  async _fetchBreakersForEditor() {
+    // Fetch the list of breakers and their states for the editor view
+    try {
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "get_scenes_breakers",
+        service_data: {}
+      });
+      if (result && result.breakers && typeof result.breakers === 'object') {
+        // result.breakers: { entity_id: { name, state } }
+        this._entities = Object.entries(result.breakers).map(([entity_id, b]) => ({
+          entity_id,
+          attributes: { friendly_name: b.name },
+          state: b.state
+        }));
+        console.info(`[Savant Card] Retrieved ${this._entities.length} breakers for editor:`, this._entities);
+      } else {
+        this._entities = [];
+        console.warn("[Savant Card] No breakers returned from backend.");
+      }
+    } catch (e) {
+      this._entities = [];
+      console.error("[Savant Card] Error fetching breakers from backend:", e);
+    }
+    this._safeRender();
+  }
+
+  _setView(view) {
+    if (this._view !== view) {
+      this._view = view;
+      if (view === "editor") {
+        // Fetch breakers for the editor view
+        this._fetchBreakersForEditor();
+        // Default to first scene if available
+        if (this._scenes.length > 0) {
+          this._selectedScene = this._scenes[0].id;
+          this._sceneName = this._scenes[0].name;
+        } else {
+          this._selectedScene = null;
+          this._sceneName = "";
+        }
+      } else {
+        this._selectedScene = null;
+        this._sceneName = "";
+        // Fetch scenes for the scenes view
+        this._fetchScenesFromBackend();
+      }
+      this._safeRender();
+    }
+  }
+
   set hass(hass) {
     const firstUpdate = this._hass === null;
     this._hass = hass;
-    // Get breaker entities as before
-    const entities = Object.values(hass.states)
-      .filter(e => e.entity_id.startsWith("switch.") && 
-              e.attributes.device_class === "switch" && 
-              e.attributes.friendly_name && 
-              (e.entity_id.includes("savant") || e.entity_id.includes("breaker")));
-    this._entities = entities;
-    // Always fetch scenes from backend
+    // Only fetch scenes on first update or initial render
     if (firstUpdate || !this._hasInitialRender) {
       this._fetchScenesFromBackend();
     }
@@ -110,27 +153,6 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (this._pendingRender) {
       this._pendingRender = false;
       setTimeout(() => this._safeRender(), 10);
-    }
-  }
-
-  _setView(view) {
-    if (this._view !== view) {
-      this._view = view;
-      if (view === "editor") {
-        // Default to first scene if available
-        if (this._scenes.length > 0) {
-          this._selectedScene = this._scenes[0].id;
-          this._sceneName = this._scenes[0].name;
-          // TODO: Load relay states for the selected scene if available
-        } else {
-          this._selectedScene = null;
-          this._sceneName = "";
-        }
-      } else {
-        this._selectedScene = null;
-        this._sceneName = "";
-      }
-      this._safeRender();
     }
   }
 
