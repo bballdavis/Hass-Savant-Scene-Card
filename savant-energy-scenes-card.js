@@ -149,6 +149,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
+      // Call the backend
       await this._hass.callService("savant_energy", "create_scene", {
         name: this._sceneName.trim(),
         relay_states: this._entities.reduce((acc, ent) => {
@@ -156,9 +157,18 @@ class SavantEnergyScenesCard extends HTMLElement {
           return acc;
         }, {})
       });
+      // Optimistically add the new scene to the list
+      const newId = `scene_${this._sceneName.trim().toLowerCase().replace(/\s+/g, '_')}`;
+      this._scenes.push({
+        id: newId,
+        entity_id: `button.savant_energy_scene_${this._sceneName.trim().toLowerCase().replace(/\s+/g, '_')}`,
+        name: this._sceneName.trim(),
+      });
+      // Optionally, set all relays ON for the new scene
+      this._relayStates = Object.assign({}, ...this._entities.map(ent => ({ [ent.entity_id]: true })));
       this._showToast(`Scene "${this._sceneName}" created successfully`);
       this._sceneName = "";
-      setTimeout(() => this._safeRender(), 500);
+      this._safeRender();
     } catch (error) {
       this._showToast("Error creating scene: " + error.message);
     }
@@ -267,6 +277,10 @@ class SavantEnergyScenesCard extends HTMLElement {
           align-items: center;
           margin-bottom: 8px;
         }
+        .scene-name-input {
+          flex: 1 1 0%;
+          min-width: 0;
+        }
         .scene-select {
           flex: 1;
         }
@@ -287,6 +301,7 @@ class SavantEnergyScenesCard extends HTMLElement {
           height: 24px;
           display: flex;
           align-items: center;
+          white-space: nowrap;
         }
         button[disabled] {
           background: var(--disabled-color, #ccc);
@@ -325,7 +340,7 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (this._view === "scenes") {
       content = `
         <div class="scene-controls">
-          <input class="input" type="text" placeholder="New scene name" value="${this._sceneName}">
+          <input class="input scene-name-input" type="text" placeholder="New scene name" value="${this._sceneName}">
           <button${this._sceneName.trim() === "" ? " disabled" : ""}>Create</button>
         </div>
         <div class="scene-list">
@@ -386,7 +401,11 @@ class SavantEnergyScenesCard extends HTMLElement {
         this._onSceneNameChange(e);
         buttonEl.disabled = e.target.value.trim() === "";
       });
-      buttonEl.addEventListener('click', () => this._onCreateScene());
+      buttonEl.addEventListener('click', async () => {
+        if (buttonEl.disabled) return;
+        // Call the create scene logic
+        await this._onCreateScene();
+      });
       this.shadowRoot.querySelectorAll('.trash-icon').forEach(btn => {
         btn.addEventListener('click', e => {
           const id = btn.getAttribute('data-id');
