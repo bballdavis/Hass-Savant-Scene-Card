@@ -2,7 +2,7 @@
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.5 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.6 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -45,7 +45,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       const result = await this._hass.callWS({
         type: "call_service",
         domain: "savant_energy",
-        service: "get_scene",
+        service: "get_scenes",
         service_data: {}
       });
       console.info("[Savant Card] Raw get_scenes API response:", result);
