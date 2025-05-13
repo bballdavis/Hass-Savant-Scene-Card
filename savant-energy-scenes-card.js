@@ -56,11 +56,14 @@ class SavantEnergyScenesCard extends HTMLElement {
           name: s.name,
           relay_states: s.relay_states || {}
         }));
+        console.info(`[Savant Card] Retrieved ${this._scenes.length} scenes from backend:`, this._scenes);
       } else {
         this._scenes = [];
+        console.warn("[Savant Card] No scenes returned from backend.");
       }
     } catch (e) {
       this._scenes = [];
+      console.error("[Savant Card] Error fetching scenes from backend:", e);
     }
     this._safeRender();
   }
@@ -89,9 +92,11 @@ class SavantEnergyScenesCard extends HTMLElement {
     }
     this._isRendering = true;
     try {
+      console.debug(`[Savant Card] Rendering view: ${this._view}, scenes count: ${this._scenes.length}`);
       this.render();
       this._hasInitialRender = true;
-    } catch (error) {      console.error("Error rendering Savant Energy Scenes Standalone card:", error);
+    } catch (error) {      
+      console.error("Error rendering Savant Energy Scenes Standalone card:", error);
       // Fallback for render errors
       this.shadowRoot.innerHTML = `
         <ha-card header="Savant Energy Scenes Standalone">
