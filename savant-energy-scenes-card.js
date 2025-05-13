@@ -1,8 +1,8 @@
-// Savant Energy Scenes Standalone Card v1.1.0
+// Savant Energy Scenes Standalone Card v1.1.3
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.0 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.3 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
