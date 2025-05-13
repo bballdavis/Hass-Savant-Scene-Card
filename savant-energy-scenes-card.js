@@ -40,7 +40,7 @@ class SavantEnergyScenesCard extends HTMLElement {
   }
 
   async _fetchScenesFromBackend() {
-    // Call the backend service to get scenes
+    // Call the backend service to get scenes (metadata only)
     try {
       const result = await this._hass.callWS({
         type: "call_service",
@@ -48,12 +48,11 @@ class SavantEnergyScenesCard extends HTMLElement {
         service: "get_scenes",
         service_data: {}
       });
-      if (result && result.scenes && typeof result.scenes === 'object') {
-        this._scenes = Object.entries(result.scenes).map(([id, s]) => ({
-          id,
-          name: s.name,
-          relay_states: s.relay_states || {},
-          entity_id: s.entity_id || undefined
+      if (result && Array.isArray(result.scenes)) {
+        // result.scenes: [ { scene_id, name } ]
+        this._scenes = result.scenes.map(s => ({
+          id: s.scene_id,
+          name: s.name
         }));
         console.info(`[Savant Card] Retrieved ${this._scenes.length} scenes from backend:`, this._scenes);
       } else {
@@ -67,29 +66,37 @@ class SavantEnergyScenesCard extends HTMLElement {
     this._safeRender();
   }
 
-  async _fetchBreakersForEditor() {
-    // Fetch the list of breakers and their states for the editor view
+  async _fetchBreakersForEditor(sceneId) {
+    // Fetch the list of breakers and their states for the editor view for a specific scene
+    if (!sceneId) {
+      this._entities = [];
+      this._relayStates = {};
+      this._safeRender();
+      return;
+    }
     try {
       const result = await this._hass.callWS({
         type: "call_service",
         domain: "savant_energy",
-        service: "get_scenes_breakers",
-        service_data: {}
+        service: "get_scene_breakers",
+        service_data: { scene_id: sceneId }
       });
       if (result && result.breakers && typeof result.breakers === 'object') {
-        // result.breakers: { entity_id: { name, state } }
-        this._entities = Object.entries(result.breakers).map(([entity_id, b]) => ({
+        // result.breakers: { entity_id: boolean }
+        this._entities = Object.keys(result.breakers).map(entity_id => ({
           entity_id,
-          attributes: { friendly_name: b.name },
-          state: b.state
+          attributes: { friendly_name: entity_id },
         }));
-        console.info(`[Savant Card] Retrieved ${this._entities.length} breakers for editor:`, this._entities);
+        this._relayStates = { ...result.breakers };
+        console.info(`[Savant Card] Retrieved breakers for scene '${sceneId}':`, this._relayStates);
       } else {
         this._entities = [];
+        this._relayStates = {};
         console.warn("[Savant Card] No breakers returned from backend.");
       }
     } catch (e) {
       this._entities = [];
+      this._relayStates = {};
       console.error("[Savant Card] Error fetching breakers from backend:", e);
     }
     this._safeRender();
@@ -99,20 +106,22 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (this._view !== view) {
       this._view = view;
       if (view === "editor") {
-        // Fetch breakers for the editor view
-        this._fetchBreakersForEditor();
         // Default to first scene if available
         if (this._scenes.length > 0) {
           this._selectedScene = this._scenes[0].id;
           this._sceneName = this._scenes[0].name;
+          this._fetchBreakersForEditor(this._selectedScene);
         } else {
           this._selectedScene = null;
           this._sceneName = "";
+          this._entities = [];
+          this._relayStates = {};
         }
       } else {
         this._selectedScene = null;
         this._sceneName = "";
-        // Fetch scenes for the scenes view
+        this._entities = [];
+        this._relayStates = {};
         this._fetchScenesFromBackend();
       }
       this._safeRender();
@@ -171,11 +180,13 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (sceneId) {
       const sceneInfo = this._scenes.find(s => s.id === sceneId);
       this._sceneName = sceneInfo?.name || "";
-      // TODO: Load relay states for the selected scene if available
+      this._fetchBreakersForEditor(sceneId);
     } else {
       this._sceneName = "";
+      this._entities = [];
+      this._relayStates = {};
+      this._safeRender();
     }
-    this._safeRender();
   }
 
   async _onCreateScene() {
