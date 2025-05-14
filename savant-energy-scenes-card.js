@@ -184,41 +184,43 @@ class SavantEnergyScenesCard extends HTMLElement {
 
   async _onCreateScene() {
     if (!this._sceneName.trim()) {
-      this._showToast("Please enter a scene name");
+      this._showToast("Scene name cannot be empty.");
       return;
     }
     try {
-      const sceneData = {
-        name: this._sceneName.trim(),
-        relay_states: this._entities.reduce((acc, ent) => {
-          acc[ent.entity_id] = this._relayStates[ent.entity_id] !== undefined ? this._relayStates[ent.entity_id] : true;
-          return acc;
-        }, {})
-      };
-      console.info("[Savant Card] Creating scene with data (callService):", sceneData);
-      // Use callService to match documented API structure
-      const result = await this._hass.callWS({
+      console.info(`Attempting to callService create_scene with name: ${this._sceneName}`);
+      const currentSceneNameForCreation = this._sceneName; // Capture before clearing for toast messages
+      const response = await this._hass.callWS({
         type: "call_service",
         domain: "savant_energy",
         service: "create_scene",
-        service_data: sceneData
+        service_data: {
+          name: currentSceneNameForCreation,
+          relay_states: {} // Initially empty, to be populated in editor
+        }
       });
-      console.info("[Savant Card] Create scene WS response:", result);
-      if (result && result.status === "ok" && result.scene_id) {
-        this._showToast(`Scene \"${this._sceneName.trim()}\" created successfully (ID: ${result.scene_id})`);
-        this._sceneName = "";
-        setTimeout(() => {
-          this._fetchScenesFromBackend();
-          this._safeRender();
-        }, 200);
-      } else if (result && result.status === "error") {
-        this._showToast(result.message || "Error creating scene.");
+      console.info("create_scene service call response:", response);
+
+      if (response && response.status === "ok") {
+        this._showToast(`Scene "${currentSceneNameForCreation}" created successfully with ID: ${response.scene_id}`);
+        this._sceneName = ""; // Clear the input field's backing property
+        this._safeRender();   // Re-render immediately to clear the input field in UI
+
+        // Fetch updated scenes list and re-render the list
+        setTimeout(async () => {
+          await this._fetchScenesFromBackend(); // This also calls _safeRender()
+        }, 100); // Delay to allow backend to process
+      } else if (response && response.status === "error") {
+        const errorMessage = response.message ? response.message : `Failed to create scene '${currentSceneNameForCreation}'. Backend error.`;
+        this._showToast(errorMessage);
+        console.error("Failed to create scene (API error):", response);
       } else {
-        this._showToast("Error creating scene. Unexpected response from service.");
+        this._showToast(`Failed to create scene '${currentSceneNameForCreation}'. Unknown response from server.`);
+        console.error("Failed to create scene (Unknown response):", response);
       }
     } catch (error) {
-      console.error("[Savant Card] Error creating scene (callService):", error);
-      this._showToast("Error creating scene: " + (error.message || error));
+      this._showToast(`Error creating scene: ${error.message}`);
+      console.error("Error in _onCreateScene:", error);
     }
   }
 
