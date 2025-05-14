@@ -2,7 +2,7 @@
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.10 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.11 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -221,14 +221,14 @@ class SavantEnergyScenesCard extends HTMLElement {
         return;
     }
     try {
-      console.info(`[Savant Card] Deleting scene '${sceneId}' (callApi)`);
-      // Use this._hass.callApi for deleting scenes via DELETE to the specific scene endpoint
-      const result = await this._hass.callApi("DELETE", `savant_energy/scenes/${sceneId}`);
-      console.info(`[Savant Card] Delete scene '${sceneId}' API response (callApi):`, result);
+      console.info(`[Savant Card] Deleting scene '${sceneId}' via callService`);
+      // Use this._hass.callService as per INTEGRATION_API.md for delete_scene
+      await this._hass.callService("savant_energy", "delete_scene", {
+        scene_id: sceneId
+      });
+      console.info(`[Savant Card] Successfully called delete_scene service for '${sceneId}'`);
 
-      // Assuming the backend returns a success status or relevant message
-      // callApi throws for non-ok HTTP status, so if we are here, it was likely a 2xx response.
-      this._showToast(result?.message || `Scene deleted successfully`);
+      this._showToast(`Scene deleted successfully`); 
       if (this._selectedScene === sceneId) {
           this._selectedScene = null;
           this._sceneName = "";
@@ -237,7 +237,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       }
       setTimeout(() => this._fetchScenesFromBackend(), 200);
     } catch (error) {
-      console.error(`[Savant Card] Error deleting scene '${sceneId}' (callApi):`, error);
+      console.error(`[Savant Card] Error deleting scene '${sceneId}' (callService):`, error);
       this._showToast("Error deleting scene: " + (error.message || error));
     }
   }
