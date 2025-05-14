@@ -78,12 +78,17 @@ class SavantEnergyScenesCard extends HTMLElement {
       if (result && result.breakers && typeof result.breakers === 'object') {
         this._entities = Object.keys(result.breakers).map(entity_id => {
           const stateObj = this._hass.states[entity_id];
-          const friendlyName = (stateObj && stateObj.attributes && stateObj.attributes.friendly_name)
-                               ? stateObj.attributes.friendly_name
-                               : entity_id; // Fallback to entity_id if not found
+          let displayName = entity_id; // Default to entity_id
+          if (stateObj && stateObj.attributes) {
+            if (typeof stateObj.attributes.name === 'string' && stateObj.attributes.name.trim() !== '') {
+              displayName = stateObj.attributes.name;
+            } else if (typeof stateObj.attributes.friendly_name === 'string' && stateObj.attributes.friendly_name.trim() !== '') {
+              displayName = stateObj.attributes.friendly_name;
+            }
+          }
           return {
             entity_id,
-            attributes: { friendly_name: friendlyName },
+            attributes: { friendly_name: displayName }, // Store the determined name under 'friendly_name' for internal consistency
           };
         });
         this._relayStates = { ...result.breakers };
