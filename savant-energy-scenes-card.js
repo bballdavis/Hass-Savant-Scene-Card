@@ -2,7 +2,7 @@
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.15 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.16 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -202,7 +202,10 @@ class SavantEnergyScenesCard extends HTMLElement {
       if (result && result.status === "ok" && result.scene_id) {
         this._showToast(`Scene \"${this._sceneName.trim()}\" created successfully (ID: ${result.scene_id})`);
         this._sceneName = "";
-        setTimeout(() => this._fetchScenesFromBackend(), 200);
+        setTimeout(() => {
+          this._fetchScenesFromBackend();
+          this._safeRender(); // Ensure rerender after create
+        }, 200);
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error creating scene.");
       } else {
@@ -232,7 +235,10 @@ class SavantEnergyScenesCard extends HTMLElement {
           this._entities = [];
           this._relayStates = {};
         }
-        setTimeout(() => this._fetchScenesFromBackend(), 200);
+        setTimeout(() => {
+          this._fetchScenesFromBackend();
+          this._safeRender(); // Ensure rerender after delete
+        }, 200);
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error deleting scene.");
       } else {
