@@ -2,7 +2,7 @@
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.13 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.14 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -345,49 +345,72 @@ class SavantEnergyScenesCard extends HTMLElement {
         }
         .breaker-columns {
           display: flex;
-          gap: 16px;
+          gap: 8px;
           width: 100%;
+          max-width: 100%;
         }
         .breaker-col {
           flex: 1 1 0;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 6px;
+          min-width: 0;
         }
-        .breaker-pill-toggle {
+        .breaker-switch-row {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 2px;
-        }
-        .breaker-pill {
-          border-radius: 999px;
-          padding: 5px 18px;
-          font-size: 0.95em;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background 0.2s, color 0.2s;
-          border: 1.5px solid var(--divider-color, #bbb);
-          background: var(--secondary-background-color, #f5f5f5);
-          color: var(--primary-text-color, #333);
-          user-select: none;
-        }
-        .breaker-pill.on {
-          background: var(--primary-color, #03a9f4);
-          color: var(--primary-text-color-on-primary, #fff);
-          border-color: var(--primary-color, #03a9f4);
-        }
-        .breaker-pill.off {
-          background: var(--disabled-color, #e0e0e0);
-          color: #888;
-          border-color: var(--disabled-color, #e0e0e0);
+          justify-content: space-between;
+          gap: 8px;
+          min-width: 0;
         }
         .breaker-label {
-          font-size: 0.97em;
+          font-size: 0.73em;
           color: var(--primary-text-color, #222);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          max-width: 120px;
+        }
+        .breaker-switch {
+          width: 36px;
+          height: 18px;
+          border-radius: 9px;
+          background: var(--disabled-color, #e0e0e0);
+          border: 1px solid var(--divider-color, #bbb);
+          position: relative;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+          display: flex;
+          align-items: center;
+          outline: none;
+        }
+        .breaker-switch.on {
+          background: var(--primary-color, #03a9f4);
+          border-color: var(--primary-color, #03a9f4);
+        }
+        .breaker-switch.off {
+          background: var(--disabled-color, #e0e0e0);
+          border-color: var(--divider-color, #bbb);
+        }
+        .breaker-switch-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+          position: absolute;
+          left: 2px;
+          top: 1px;
+          transition: left 0.2s;
+        }
+        .breaker-switch.on .breaker-switch-thumb {
+          left: 20px;
+        }
+        .breaker-switch.off .breaker-switch-thumb {
+          left: 2px;
+        }
+        .breaker-switch:focus {
+          box-shadow: 0 0 0 2px var(--primary-color, #03a9f4, 0.2);
         }
         .switch-list {
           display: none;
@@ -480,16 +503,18 @@ class SavantEnergyScenesCard extends HTMLElement {
         </div>
       `;
     } else if (this._view === "editor") {
-      // Two column pill-style breaker toggles
+      // Two column switch-style breaker toggles
       const breakerColumns = [[], []];
       this._entities.forEach((ent, idx) => {
         const col = idx % 2;
+        // Use friendly_name if available, fallback to entity_id
+        const friendlyName = ent.attributes.friendly_name || ent.entity_id;
         breakerColumns[col].push(`
-          <div class="breaker-pill-toggle">
-            <div class="breaker-pill${this._relayStates[ent.entity_id] !== false ? ' on' : ' off'}" data-entity="${ent.entity_id}">
-              ${this._relayStates[ent.entity_id] !== false ? 'On' : 'Off'}
+          <div class="breaker-switch-row">
+            <span class="breaker-label" title="${friendlyName}">${friendlyName}</span>
+            <div class="breaker-switch${this._relayStates[ent.entity_id] !== false ? ' on' : ' off'}" data-entity="${ent.entity_id}" tabindex="0" role="switch" aria-checked="${this._relayStates[ent.entity_id] !== false}">
+              <div class="breaker-switch-thumb"></div>
             </div>
-            <span class="breaker-label">${ent.attributes.friendly_name || ent.entity_id}</span>
           </div>
         `);
       });
@@ -548,10 +573,17 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (this._view === 'editor') {
       this.shadowRoot.querySelector('select').addEventListener('change', e => this._onSceneSelect(e));
       this.shadowRoot.querySelector('button').addEventListener('click', () => this._onSaveEditor());
-      this.shadowRoot.querySelectorAll('.breaker-pill').forEach(pill => {
-        pill.addEventListener('click', e => {
-          const entityId = pill.getAttribute('data-entity');
+      this.shadowRoot.querySelectorAll('.breaker-switch').forEach(sw => {
+        sw.addEventListener('click', e => {
+          const entityId = sw.getAttribute('data-entity');
           this._onRelayToggle(entityId);
+        });
+        sw.addEventListener('keydown', e => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            const entityId = sw.getAttribute('data-entity');
+            this._onRelayToggle(entityId);
+          }
         });
       });
     }
