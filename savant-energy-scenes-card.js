@@ -42,7 +42,12 @@ class SavantEnergyScenesCard extends HTMLElement {
   async _fetchScenesFromBackend() {
     // Fetch scenes using the REST API only (with /api prefix)
     try {
-      const resp = await fetch("/api/savant_energy/scenes", { credentials: "same-origin" });
+      const resp = await fetch("/api/savant_energy/scenes", {
+        credentials: "include",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
       const result = await resp.json();
       console.info("[Savant Card] Raw get_scenes API response (REST):", result);
       if (result && Array.isArray(result.scenes)) {
@@ -72,7 +77,12 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
-      const resp = await fetch(`/api/savant_energy/scene_breakers/${sceneId}`, { credentials: "same-origin" });
+      const resp = await fetch(`/api/savant_energy/scene_breakers/${sceneId}`, {
+        credentials: "include",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
       const result = await resp.json();
       console.info(`[Savant Card] Raw get_scene_breakers API response (REST) for scene '${sceneId}':`, result);
       if (result && result.breakers && typeof result.breakers === 'object') {
