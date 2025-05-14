@@ -133,23 +133,19 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (this._view !== view) {
       this._view = view;
       if (view === "editor") {
-        // Default to first scene if available
-        if (this._scenes.length > 0) {
-          this._selectedScene = this._scenes[0].id;
-          this._sceneName = this._scenes[0].name;
-          this._fetchBreakersForEditor(this._selectedScene);
-        } else {
-          this._selectedScene = null;
-          this._sceneName = "";
-          this._entities = [];
-          this._relayStates = {};
-        }
-      } else {
+        this._selectedScene = null; // Always default to "Select a scene"
+        this._sceneName = "";       // Clear scene name
+        this._entities = [];        // Clear entities for editor
+        this._relayStates = {};     // Clear relay states for editor
+        // Breakers will be fetched by _onSceneSelect when a scene is chosen
+      } else { // scenes view
+        // For scenes view, we might want to keep _sceneName for the create input
+        // but clear selection specific details
         this._selectedScene = null;
-        this._sceneName = "";
+        // this._sceneName = ""; // Keep for create input if needed, or clear if preferred
         this._entities = [];
         this._relayStates = {};
-        this._fetchScenesFromBackend();
+        this._fetchScenesFromBackend(); // Refresh scenes list when going to scenes view
       }
       this._safeRender();
     }
@@ -477,7 +473,11 @@ class SavantEnergyScenesCard extends HTMLElement {
           width: 100%;
         }
         .scene-select {
-          flex: 1;
+          flex: 1 1 30%; /* Approx 1/3 of the controls space, allowing more for name */
+          min-width: 130px; /* Ensure it's usable */
+        }
+        .scene-name-editor-input { /* New class for the editor's scene name input */
+          flex: 1 1 50%; /* Takes more space */
         }
         .input {
           padding: 3px 7px;
@@ -574,7 +574,8 @@ class SavantEnergyScenesCard extends HTMLElement {
             <option value="" ${!this._selectedScene ? "selected" : ""}>Select a scene</option>
             ${this._scenes.map(s => `<option value="${s.id}" ${this._selectedScene === s.id ? "selected" : ""}>${s.name}</option>`).join("")}
           </select>
-          <button${!this._selectedScene ? " disabled" : ""}>Save</button>
+          <input class="input scene-name-editor-input" type="text" placeholder="Scene name" value="${this._sceneName}" ${!this._selectedScene ? "disabled" : ""}>
+          <button class="save-scene-button" ${(!this._selectedScene || !this._sceneName.trim()) ? " disabled" : ""}>Save</button>
         </div>
         <div class="breaker-columns">
           <div class="breaker-col">${breakerColumns[0].join("")}</div>
@@ -601,17 +602,19 @@ class SavantEnergyScenesCard extends HTMLElement {
     });
     // Scenes view events
     if (this._view === 'scenes') {
-      const inputEl = this.shadowRoot.querySelector('input[type=text]');
-      const buttonEl = this.shadowRoot.querySelector('button');
-      inputEl.addEventListener('input', e => {
-        this._onSceneNameChange(e);
-        buttonEl.disabled = e.target.value.trim() === "";
-      });
-      buttonEl.addEventListener('click', async () => {
-        if (buttonEl.disabled) return;
-        // Call the create scene logic
-        await this._onCreateScene();
-      });
+      const inputEl = this.shadowRoot.querySelector('.scene-name-input'); // Ensure this targets create scene input
+      const buttonEl = this.shadowRoot.querySelector('button:not(.save-scene-button)'); // Ensure this targets create button
+      if (inputEl && buttonEl) {
+        inputEl.addEventListener('input', e => {
+          this._onSceneNameChange(e);
+          buttonEl.disabled = e.target.value.trim() === "";
+        });
+        buttonEl.addEventListener('click', async () => {
+          if (buttonEl.disabled) return;
+          // Call the create scene logic
+          await this._onCreateScene();
+        });
+      }
       this.shadowRoot.querySelectorAll('.trash-icon').forEach(btn => {
         btn.addEventListener('click', e => {
           const id = btn.getAttribute('data-id');
@@ -621,8 +624,19 @@ class SavantEnergyScenesCard extends HTMLElement {
     }
     // Editor view events
     if (this._view === 'editor') {
-      this.shadowRoot.querySelector('select').addEventListener('change', e => this._onSceneSelect(e));
-      this.shadowRoot.querySelector('button').addEventListener('click', () => this._onSaveEditor());
+      this.shadowRoot.querySelector('.scene-select').addEventListener('change', e => this._onSceneSelect(e));
+      
+      const editorSceneNameInput = this.shadowRoot.querySelector('.scene-name-editor-input');
+      const saveButton = this.shadowRoot.querySelector('.save-scene-button');
+
+      if (editorSceneNameInput && saveButton) {
+        editorSceneNameInput.addEventListener('input', e => {
+          this._onSceneNameChange(e); // Updates this._sceneName
+          saveButton.disabled = (!this._selectedScene || this._sceneName.trim() === "");
+        });
+        saveButton.addEventListener('click', () => this._onSaveEditor());
+      }
+      
       this.shadowRoot.querySelectorAll('.breaker-switch').forEach(sw => {
         sw.addEventListener('click', e => {
           const entityId = sw.getAttribute('data-entity');
