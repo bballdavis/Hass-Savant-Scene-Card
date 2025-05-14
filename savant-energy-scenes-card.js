@@ -29,7 +29,33 @@ class SavantEnergyScenesCard extends HTMLElement {
       </ha-card>
     `;
   }
-    // This is called by Lovelace when the configuration changes
+
+  _getAuthHeaders() {
+    // Try to get Home Assistant auth token from localStorage/sessionStorage
+    let token = undefined;
+    // Home Assistant stores the auth token in localStorage under 'hassTokens' or 'auth_access_token'
+    try {
+      // Try new auth storage
+      const tokens = localStorage.getItem('hassTokens');
+      if (tokens) {
+        const parsed = JSON.parse(tokens);
+        token = parsed?.access_token;
+      }
+      // Fallback to legacy
+      if (!token) {
+        token = localStorage.getItem('auth_access_token') || sessionStorage.getItem('auth_access_token');
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    const headers = { 'Accept': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
+  // This is called by Lovelace when the configuration changes
   static getConfigElement() {
     return document.createElement("savant-energy-scenes-standalone-card-editor");
   }
@@ -44,9 +70,7 @@ class SavantEnergyScenesCard extends HTMLElement {
     try {
       const resp = await fetch("/api/savant_energy/scenes", {
         credentials: "include",
-        headers: {
-          "Accept": "application/json"
-        }
+        headers: this._getAuthHeaders()
       });
       const result = await resp.json();
       console.info("[Savant Card] Raw get_scenes API response (REST):", result);
@@ -79,9 +103,7 @@ class SavantEnergyScenesCard extends HTMLElement {
     try {
       const resp = await fetch(`/api/savant_energy/scene_breakers/${sceneId}`, {
         credentials: "include",
-        headers: {
-          "Accept": "application/json"
-        }
+        headers: this._getAuthHeaders()
       });
       const result = await resp.json();
       console.info(`[Savant Card] Raw get_scene_breakers API response (REST) for scene '${sceneId}':`, result);
