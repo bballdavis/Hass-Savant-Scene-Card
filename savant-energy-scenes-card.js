@@ -2,7 +2,7 @@
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.11 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.12 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -190,27 +190,30 @@ class SavantEnergyScenesCard extends HTMLElement {
     try {
       const sceneData = {
         name: this._sceneName.trim(),
-        // When creating from the scenes view, this._entities is empty, so relay_states will be {}
-        // This is appropriate for a new scene; it can be edited subsequently.
         relay_states: this._entities.reduce((acc, ent) => {
           acc[ent.entity_id] = this._relayStates[ent.entity_id] !== undefined ? this._relayStates[ent.entity_id] : true;
           return acc;
         }, {})
       };
-      console.info("[Savant Card] Creating scene with data (callApi):", sceneData);
-      // Use this._hass.callApi for creating scenes via POST to the scenes collection endpoint
-      const result = await this._hass.callApi("POST", "savant_energy/scenes", sceneData);
-      console.info("[Savant Card] Create scene API response (callApi):", result);
+      console.info("[Savant Card] Creating scene with data (callService):", sceneData);
+      // Use this._hass.callService for creating scenes as per INTEGRATION_API.md
+      const result = await this._hass.callService("savant_energy", "create_scene", sceneData);
+      console.info("[Savant Card] Create scene service response:", result);
 
-      if (result && (result.scene_id || result.id || result.status === "ok" || result.success)) { // Adjust based on actual backend response
-        this._showToast(`Scene "${this._sceneName.trim()}" created successfully`);
+      // Response handling based on INTEGRATION_API.md for create_scene service
+      if (result && result.status === "ok" && result.scene_id) {
+        this._showToast(`Scene "${this._sceneName.trim()}" created successfully (ID: ${result.scene_id})`);
         this._sceneName = ""; // Clear input field
-        setTimeout(() => this._fetchScenesFromBackend(), 200); 
+        setTimeout(() => this._fetchScenesFromBackend(), 200);
+      } else if (result && result.status === "error") {
+        this._showToast(result.message || "Error creating scene.");
       } else {
-        this._showToast(result?.message || "Error creating scene. Unexpected response.");
+        // If callService resolves without a specific status, it might still be a success for some services.
+        // However, create_scene is documented to return a status.
+        this._showToast("Error creating scene. Unexpected response from service.");
       }
     } catch (error) {
-      console.error("[Savant Card] Error creating scene (callApi):", error);
+      console.error("[Savant Card] Error creating scene (callService):", error);
       this._showToast("Error creating scene: " + (error.message || error));
     }
   }
@@ -252,26 +255,24 @@ class SavantEnergyScenesCard extends HTMLElement {
         return;
     }
     try {
-      const sceneData = {
+      const serviceData = {
+        scene_id: this._selectedScene, // Required for update_scene service
         name: this._sceneName.trim(),
         relay_states: this._entities.reduce((acc, ent) => {
-          acc[ent.entity_id] = !!this._relayStates[ent.entity_id]; // Use entity_id as key
+          acc[ent.entity_id] = !!this._relayStates[ent.entity_id];
           return acc;
         }, {})
       };
-      console.info(`[Savant Card] Saving scene '${this._selectedScene}' with data (callApi):`, sceneData);
-      // Use this._hass.callApi for updating scenes via PUT to the specific scene endpoint
-      const result = await this._hass.callApi("PUT", `savant_energy/scenes/${this._selectedScene}`, sceneData);
-      console.info(`[Savant Card] Update scene '${this._selectedScene}' API response (callApi):`, result);
-
-      if (result && (result.status === "ok" || result.success || result.scene_id || result.id)) { // Adjust based on actual backend response
-        this._showToast(`Scene "${this._sceneName.trim()}" updated successfully`);
-        setTimeout(() => this._fetchScenesFromBackend(), 200);
-      } else {
-        this._showToast(result?.message || "Error saving scene. Unexpected response.");
-      }
+      console.info(`[Savant Card] Saving scene '${this._selectedScene}' with data (callService):`, serviceData);
+      // Use this._hass.callService for updating scenes as per INTEGRATION_API.md
+      await this._hass.callService("savant_energy", "update_scene", serviceData);
+      // update_scene service does not return a direct response body according to API doc.
+      // If callService completes without error, assume success.
+      console.info(`[Savant Card] Successfully called update_scene service for '${this._selectedScene}'`);
+      this._showToast(`Scene "${this._sceneName.trim()}" updated successfully`);
+      setTimeout(() => this._fetchScenesFromBackend(), 200);
     } catch (error) {
-      console.error(`[Savant Card] Error saving scene '${this._selectedScene}' (callApi):`, error);
+      console.error(`[Savant Card] Error saving scene '${this._selectedScene}' (callService):`, error);
       this._showToast("Error saving scene: " + (error.message || error));
     }
   }
