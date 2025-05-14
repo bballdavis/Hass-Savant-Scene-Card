@@ -95,6 +95,29 @@ class SavantEnergyScenesCard extends HTMLElement {
     this._safeRender();
   }
 
+  // Add helper to compare and refresh scene list only when different
+
+  /**
+   * Fetch latest scenes from backend and update only if different from current list.
+   */
+  async _refreshScenesConfirm() {
+    try {
+      const result = await this._hass.callApi("GET", "savant_energy/scenes");
+      if (result && Array.isArray(result.scenes)) {
+        const fetched = result.scenes.map(s => ({ id: s.scene_id, name: s.name }));
+        // Compare by JSON string of ids+names
+        const currStr = JSON.stringify(this._scenes);
+        const newStr = JSON.stringify(fetched);
+        if (currStr !== newStr) {
+          this._scenes = fetched;
+          this._safeRender();
+        }
+      }
+    } catch (e) {
+      console.error("[Savant Card] Error confirming scenes list (callApi):", e);
+    }
+  }
+
   _setView(view) {
     if (this._view !== view) {
       this._view = view;
@@ -202,14 +225,14 @@ class SavantEnergyScenesCard extends HTMLElement {
       console.info("create_scene service call response:", response);
 
       if (response && response.status === "ok") {
-        this._showToast(`Scene "${currentSceneNameForCreation}" created successfully with ID: ${response.scene_id}`);
-        this._sceneName = ""; // Clear the input field's backing property
-        this._safeRender();   // Re-render immediately to clear the input field in UI
-
-        // Fetch updated scenes list and re-render the list
-        setTimeout(async () => {
-          await this._fetchScenesFromBackend(); // This also calls _safeRender()
-        }, 100); // Delay to allow backend to process
+        this._showToast(`Scene "${currentSceneNameForCreation}" created successfully (ID: ${response.scene_id})`);
+        // Optimistically update scene list
+        this._scenes = [...this._scenes, { id: response.scene_id, name: currentSceneNameForCreation }];
+        this._sceneName = "";
+        this._safeRender();
+        // Confirm with backend and rerender if changed
+        await this._refreshScenesConfirm();
+        return;
       } else if (response && response.status === "error") {
         const errorMessage = response.message ? response.message : `Failed to create scene '${currentSceneNameForCreation}'. Backend error.`;
         this._showToast(errorMessage);
@@ -241,16 +264,18 @@ class SavantEnergyScenesCard extends HTMLElement {
       console.info(`[Savant Card] Delete scene WS response:`, result);
       if (result && result.status === "ok") {
         this._showToast(`Scene deleted successfully`);
+        // Optimistically remove from scene list
+        this._scenes = this._scenes.filter(s => s.id !== sceneId);
         if (this._selectedScene === sceneId) {
           this._selectedScene = null;
           this._sceneName = "";
           this._entities = [];
           this._relayStates = {};
         }
-        setTimeout(() => {
-          this._fetchScenesFromBackend();
-          this._safeRender();
-        }, 200);
+        this._safeRender();
+        // Confirm with backend and rerender if changed
+        await this._refreshScenesConfirm();
+        return;
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error deleting scene.");
       } else {
