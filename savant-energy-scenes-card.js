@@ -40,7 +40,7 @@ class SavantEnergyScenesCard extends HTMLElement {
     return {};
   }
 
-  async _fetchScenesFromBackend() {
+  async _fetchScenesFromBackend(triggerRender = true) { // Added triggerRender parameter
     try {
       // Use this._hass.callApi for fetching scenes
       const result = await this._hass.callApi("GET", "savant_energy/scenes");
@@ -60,7 +60,9 @@ class SavantEnergyScenesCard extends HTMLElement {
       this._scenes = [];
       console.error("[Savant Card] Error fetching scenes from backend (callApi):", e);
     }
-    this._safeRender();
+    if (triggerRender) {
+      this._safeRender();
+    }
   }
 
   async _fetchBreakersForEditor(sceneId) {
@@ -106,58 +108,37 @@ class SavantEnergyScenesCard extends HTMLElement {
     this._safeRender();
   }
 
-  // Add helper to compare and refresh scene list only when different
-
-  /**
-   * Fetch latest scenes from backend and update only if different from current list.
-   */
-  async _refreshScenesConfirm() {
-    try {
-      const result = await this._hass.callApi("GET", "savant_energy/scenes");
-      if (result && Array.isArray(result.scenes)) {
-        const fetched = result.scenes.map(s => ({ id: s.scene_id, name: s.name }));
-        // Compare by JSON string of ids+names
-        const currStr = JSON.stringify(this._scenes);
-        const newStr = JSON.stringify(fetched);
-        if (currStr !== newStr) {
-          this._scenes = fetched;
-          this._safeRender();
-        }
-      }
-    } catch (e) {
-      console.error("[Savant Card] Error confirming scenes list (callApi):", e);
-    }
-  }
-
-  _setView(view) {
+  async _setView(view) { // Modified to await fetch and control render
     if (this._view !== view) {
       this._view = view;
       if (view === "editor") {
-        this._selectedScene = null; // Always default to "Select a scene"
-        this._sceneName = "";       // Clear scene name
-        this._entities = [];        // Clear entities for editor
-        this._relayStates = {};     // Clear relay states for editor
-        // Breakers will be fetched by _onSceneSelect when a scene is chosen
+        this._selectedScene = null; 
+        this._sceneName = "";       
+        this._entities = [];        
+        this._relayStates = {};     
+        await this._fetchScenesFromBackend(false); // Fetch scenes for dropdown
       } else { // scenes view
-        // For scenes view, we might want to keep _sceneName for the create input
-        // but clear selection specific details
         this._selectedScene = null;
-        // this._sceneName = ""; // Keep for create input if needed, or clear if preferred
+        // this._sceneName = ""; // Keep for create input on scenes view if preferred
         this._entities = [];
         this._relayStates = {};
-        this._fetchScenesFromBackend(); // Refresh scenes list when going to scenes view
+        await this._fetchScenesFromBackend(false); // Refresh scenes list
       }
-      this._safeRender();
+      this._safeRender(); // Single render after all state is set
     }
   }
 
   set hass(hass) {
     const firstUpdate = this._hass === null;
     this._hass = hass;
-    // Only fetch scenes on first update or initial render
     if (firstUpdate || !this._hasInitialRender) {
-      this._fetchScenesFromBackend();
+      // Call an async method to handle the fetching
+      this._initializeScenes();
     }
+  }
+
+  async _initializeScenes() {
+    await this._fetchScenesFromBackend();
   }
 
   _safeRender() {
@@ -232,13 +213,10 @@ class SavantEnergyScenesCard extends HTMLElement {
       console.info("create_scene service call response:", response);
 
       if (response && response.status === "ok") {
-        this._showToast(`Scene "${currentSceneNameForCreation}" created successfully (ID: ${response.scene_id})`);
-        // Optimistically update scene list
-        this._scenes = [...this._scenes, { id: response.scene_id, name: currentSceneNameForCreation }];
-        this._sceneName = "";
-        this._safeRender();
-        // Confirm with backend and rerender if changed
-        await this._refreshScenesConfirm();
+        this._showToast(`Scene "${currentSceneNameForCreation}" created successfully.`);
+        this._sceneName = ""; // Clear the input field for new scene name
+        await this._fetchScenesFromBackend(false); // Fetch new list, don't render yet
+        this._safeRender(); // Render with updated list
         return;
       } else if (response && response.status === "error") {
         const errorMessage = response.message ? response.message : `Failed to create scene '${currentSceneNameForCreation}'. Backend error.`;
@@ -271,17 +249,16 @@ class SavantEnergyScenesCard extends HTMLElement {
       console.info(`[Savant Card] Delete scene WS response:`, result);
       if (result && result.status === "ok") {
         this._showToast(`Scene deleted successfully`);
-        // Optimistically remove from scene list
-        this._scenes = this._scenes.filter(s => s.id !== sceneId);
-        if (this._selectedScene === sceneId) {
+        const deletedSceneId = sceneId; 
+        await this._fetchScenesFromBackend(false); // Fetch new list, don't render yet
+
+        if (this._selectedScene === deletedSceneId) {
           this._selectedScene = null;
           this._sceneName = "";
           this._entities = [];
           this._relayStates = {};
         }
-        this._safeRender();
-        // Confirm with backend and rerender if changed
-        await this._refreshScenesConfirm();
+        this._safeRender(); // Render with updated list and selection
         return;
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error deleting scene.");
@@ -323,10 +300,22 @@ class SavantEnergyScenesCard extends HTMLElement {
       console.info(`[Savant Card] Update scene WS response:`, result);
       if (result && result.status === "ok") {
         this._showToast(`Scene \"${this._sceneName.trim()}\" updated successfully`);
-        setTimeout(() => {
-          this._fetchScenesFromBackend();
-          this._safeRender();
-        }, 200);
+        const updatedSceneId = this._selectedScene; // Capture before any potential change
+        
+        await this._fetchScenesFromBackend(false); // Fetch new scene list, don't render yet
+
+        const sceneInList = this._scenes.find(s => s.id === updatedSceneId);
+        if (sceneInList) {
+          // Ensure this._sceneName (bound to input) reflects the name from the source of truth
+          this._sceneName = sceneInList.name; 
+        } else {
+          // If the updated scene is somehow not in the list (e.g., deleted by another process concurrently)
+          this._selectedScene = null;
+          this._sceneName = "";
+          this._entities = [];
+          this._relayStates = {};
+        }
+        this._safeRender(); // Now render with all updated state
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error saving scene.");
       } else {
