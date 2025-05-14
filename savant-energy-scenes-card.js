@@ -2,7 +2,7 @@
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.16 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.17 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -195,16 +195,21 @@ class SavantEnergyScenesCard extends HTMLElement {
           return acc;
         }, {})
       };
-      console.info("[Savant Card] Creating scene with data (callApi):", sceneData);
-      // Use callApi for auth consistency
-      const result = await this._hass.callApi("POST", "savant_energy/create_scene", sceneData);
-      console.info("[Savant Card] Create scene API response:", result);
+      console.info("[Savant Card] Creating scene with data (callService):", sceneData);
+      // Use callService to match documented API structure
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "create_scene",
+        service_data: sceneData
+      });
+      console.info("[Savant Card] Create scene WS response:", result);
       if (result && result.status === "ok" && result.scene_id) {
         this._showToast(`Scene \"${this._sceneName.trim()}\" created successfully (ID: ${result.scene_id})`);
         this._sceneName = "";
         setTimeout(() => {
           this._fetchScenesFromBackend();
-          this._safeRender(); // Ensure rerender after create
+          this._safeRender();
         }, 200);
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error creating scene.");
@@ -212,7 +217,7 @@ class SavantEnergyScenesCard extends HTMLElement {
         this._showToast("Error creating scene. Unexpected response from service.");
       }
     } catch (error) {
-      console.error("[Savant Card] Error creating scene (callApi):", error);
+      console.error("[Savant Card] Error creating scene (callService):", error);
       this._showToast("Error creating scene: " + (error.message || error));
     }
   }
@@ -223,10 +228,15 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
-      console.info(`[Savant Card] Deleting scene '${sceneId}' via callApi`);
-      // Use callApi for auth consistency
-      const result = await this._hass.callApi("POST", "savant_energy/delete_scene", { scene_id: sceneId });
-      console.info(`[Savant Card] Delete scene API response:`, result);
+      console.info(`[Savant Card] Deleting scene '${sceneId}' via callService`);
+      // Use callService to match documented API structure
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "delete_scene",
+        service_data: { scene_id: sceneId }
+      });
+      console.info(`[Savant Card] Delete scene WS response:`, result);
       if (result && result.status === "ok") {
         this._showToast(`Scene deleted successfully`);
         if (this._selectedScene === sceneId) {
@@ -237,7 +247,7 @@ class SavantEnergyScenesCard extends HTMLElement {
         }
         setTimeout(() => {
           this._fetchScenesFromBackend();
-          this._safeRender(); // Ensure rerender after delete
+          this._safeRender();
         }, 200);
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error deleting scene.");
@@ -245,7 +255,7 @@ class SavantEnergyScenesCard extends HTMLElement {
         this._showToast("Error deleting scene. Unexpected response from service.");
       }
     } catch (error) {
-      console.error(`[Savant Card] Error deleting scene '${sceneId}' (callApi):`, error);
+      console.error(`[Savant Card] Error deleting scene '${sceneId}' (callService):`, error);
       this._showToast("Error deleting scene: " + (error.message || error));
     }
   }
@@ -268,20 +278,28 @@ class SavantEnergyScenesCard extends HTMLElement {
           return acc;
         }, {})
       };
-      console.info(`[Savant Card] Saving scene '${this._selectedScene}' with data (callApi):`, serviceData);
-      // Use callApi for auth consistency
-      const result = await this._hass.callApi("POST", "savant_energy/update_scene", serviceData);
-      console.info(`[Savant Card] Update scene API response:`, result);
+      console.info(`[Savant Card] Saving scene '${this._selectedScene}' with data (callService):`, serviceData);
+      // Use callService to match documented API structure
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "update_scene",
+        service_data: serviceData
+      });
+      console.info(`[Savant Card] Update scene WS response:`, result);
       if (result && result.status === "ok") {
         this._showToast(`Scene \"${this._sceneName.trim()}\" updated successfully`);
-        setTimeout(() => this._fetchScenesFromBackend(), 200);
+        setTimeout(() => {
+          this._fetchScenesFromBackend();
+          this._safeRender();
+        }, 200);
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error saving scene.");
       } else {
         this._showToast("Error saving scene. Unexpected response from service.");
       }
     } catch (error) {
-      console.error(`[Savant Card] Error saving scene '${this._selectedScene}' (callApi):`, error);
+      console.error(`[Savant Card] Error saving scene '${this._selectedScene}' (callService):`, error);
       this._showToast("Error saving scene: " + (error.message || error));
     }
   }
