@@ -76,10 +76,16 @@ class SavantEnergyScenesCard extends HTMLElement {
       console.info(`[Savant Card] Raw get_scene_breakers API response (callApi) for scene '${sceneId}':`, result);
       // this._hass.callApi directly returns the parsed response
       if (result && result.breakers && typeof result.breakers === 'object') {
-        this._entities = Object.keys(result.breakers).map(entity_id => ({
-          entity_id,
-          attributes: { friendly_name: entity_id },
-        }));
+        this._entities = Object.keys(result.breakers).map(entity_id => {
+          const stateObj = this._hass.states[entity_id];
+          const friendlyName = (stateObj && stateObj.attributes && stateObj.attributes.friendly_name)
+                               ? stateObj.attributes.friendly_name
+                               : entity_id; // Fallback to entity_id if not found
+          return {
+            entity_id,
+            attributes: { friendly_name: friendlyName },
+          };
+        });
         this._relayStates = { ...result.breakers };
         console.info(`[Savant Card] Retrieved breakers for scene '${sceneId}':`, this._relayStates);
       } else {
@@ -547,7 +553,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       this._entities.forEach((ent, idx) => {
         const col = idx % 2;
         // Use friendly_name if available, fallback to entity_id
-        const friendlyName = ent.attributes.friendly_name || ent.entity_id;
+        const friendlyName = ent.attributes?.friendly_name || ent.entity_id;
         breakerColumns[col].push(`
           <div class="breaker-switch-row">
             <span class="breaker-label" title="${friendlyName}">${friendlyName}</span>
