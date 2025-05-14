@@ -69,7 +69,20 @@ Update an existing scene's name and/or relay states. This service is used to mod
 ```
 
 ### Response
-This service does not return a direct response body upon success, but the scene will be updated in Home Assistant. Check Home Assistant logs for confirmation or errors.
+- On success:
+  ```json
+  {
+    "status": "ok",
+    "scene_id": "savant_movie_night"
+  }
+  ```
+- On error:
+  ```json
+  {
+    "status": "error",
+    "message": "Scene savant_movie_night not found."
+  }
+  ```
 
 ## Service: `savant_energy.delete_scene`
 
@@ -86,7 +99,20 @@ Delete a scene by its ID. This action is irreversible.
 ```
 
 ### Response
-This service does not return a direct response body upon success, but the scene will be removed from Home Assistant. Check Home Assistant logs for confirmation or errors.
+- On success:
+  ```json
+  {
+    "status": "ok",
+    "scene_id": "savant_movie_night"
+  }
+  ```
+- On error:
+  ```json
+  {
+    "status": "error",
+    "message": "Scene savant_movie_night not found."
+  }
+  ```
 
 ## Service: `savant_energy.get_scenes`
 

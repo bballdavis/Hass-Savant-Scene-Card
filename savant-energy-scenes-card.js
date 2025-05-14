@@ -195,84 +195,99 @@ class SavantEnergyScenesCard extends HTMLElement {
           return acc;
         }, {})
       };
-      console.info("[Savant Card] Creating scene with data (callService):", sceneData);
-      // Use this._hass.callService for creating scenes as per INTEGRATION_API.md
-      const result = await this._hass.callService("savant_energy", "create_scene", sceneData);
-      console.info("[Savant Card] Create scene service response:", result);
-
-      // Response handling based on INTEGRATION_API.md for create_scene service
+      console.info("[Savant Card] Creating scene with data (callWS):", sceneData);
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "create_scene",
+        service_data: sceneData
+      });
+      console.info("[Savant Card] Create scene WS response:", result);
       if (result && result.status === "ok" && result.scene_id) {
-        this._showToast(`Scene "${this._sceneName.trim()}" created successfully (ID: ${result.scene_id})`);
-        this._sceneName = ""; // Clear input field
+        this._showToast(`Scene \"${this._sceneName.trim()}\" created successfully (ID: ${result.scene_id})`);
+        this._sceneName = "";
         setTimeout(() => this._fetchScenesFromBackend(), 200);
       } else if (result && result.status === "error") {
         this._showToast(result.message || "Error creating scene.");
       } else {
-        // If callService resolves without a specific status, it might still be a success for some services.
-        // However, create_scene is documented to return a status.
         this._showToast("Error creating scene. Unexpected response from service.");
       }
     } catch (error) {
-      console.error("[Savant Card] Error creating scene (callService):", error);
+      console.error("[Savant Card] Error creating scene (callWS):", error);
       this._showToast("Error creating scene: " + (error.message || error));
     }
   }
 
   async _onDeleteScene(sceneId) {
     if (!sceneId) {
-        this._showToast("Cannot delete: Scene ID is missing.");
-        return;
+      this._showToast("Cannot delete: Scene ID is missing.");
+      return;
     }
     try {
-      console.info(`[Savant Card] Deleting scene '${sceneId}' via callService`);
-      // Use this._hass.callService as per INTEGRATION_API.md for delete_scene
-      await this._hass.callService("savant_energy", "delete_scene", {
-        scene_id: sceneId
+      console.info(`[Savant Card] Deleting scene '${sceneId}' via callWS`);
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "delete_scene",
+        service_data: { scene_id: sceneId }
       });
-      console.info(`[Savant Card] Successfully called delete_scene service for '${sceneId}'`);
-
-      this._showToast(`Scene deleted successfully`); 
-      if (this._selectedScene === sceneId) {
+      console.info(`[Savant Card] Delete scene WS response:`, result);
+      if (result && result.status === "ok") {
+        this._showToast(`Scene deleted successfully`);
+        if (this._selectedScene === sceneId) {
           this._selectedScene = null;
           this._sceneName = "";
           this._entities = [];
           this._relayStates = {};
+        }
+        setTimeout(() => this._fetchScenesFromBackend(), 200);
+      } else if (result && result.status === "error") {
+        this._showToast(result.message || "Error deleting scene.");
+      } else {
+        this._showToast("Error deleting scene. Unexpected response from service.");
       }
-      setTimeout(() => this._fetchScenesFromBackend(), 200);
     } catch (error) {
-      console.error(`[Savant Card] Error deleting scene '${sceneId}' (callService):`, error);
+      console.error(`[Savant Card] Error deleting scene '${sceneId}' (callWS):`, error);
       this._showToast("Error deleting scene: " + (error.message || error));
     }
   }
 
   async _onSaveEditor() {
     if (!this._selectedScene) {
-        this._showToast("No scene selected to save.");
-        return;
+      this._showToast("No scene selected to save.");
+      return;
     }
     if (!this._sceneName.trim()) {
-        this._showToast("Scene name cannot be empty.");
-        return;
+      this._showToast("Scene name cannot be empty.");
+      return;
     }
     try {
       const serviceData = {
-        scene_id: this._selectedScene, // Required for update_scene service
+        scene_id: this._selectedScene,
         name: this._sceneName.trim(),
         relay_states: this._entities.reduce((acc, ent) => {
           acc[ent.entity_id] = !!this._relayStates[ent.entity_id];
           return acc;
         }, {})
       };
-      console.info(`[Savant Card] Saving scene '${this._selectedScene}' with data (callService):`, serviceData);
-      // Use this._hass.callService for updating scenes as per INTEGRATION_API.md
-      await this._hass.callService("savant_energy", "update_scene", serviceData);
-      // update_scene service does not return a direct response body according to API doc.
-      // If callService completes without error, assume success.
-      console.info(`[Savant Card] Successfully called update_scene service for '${this._selectedScene}'`);
-      this._showToast(`Scene "${this._sceneName.trim()}" updated successfully`);
-      setTimeout(() => this._fetchScenesFromBackend(), 200);
+      console.info(`[Savant Card] Saving scene '${this._selectedScene}' with data (callWS):`, serviceData);
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "savant_energy",
+        service: "update_scene",
+        service_data: serviceData
+      });
+      console.info(`[Savant Card] Update scene WS response:`, result);
+      if (result && result.status === "ok") {
+        this._showToast(`Scene \"${this._sceneName.trim()}\" updated successfully`);
+        setTimeout(() => this._fetchScenesFromBackend(), 200);
+      } else if (result && result.status === "error") {
+        this._showToast(result.message || "Error saving scene.");
+      } else {
+        this._showToast("Error saving scene. Unexpected response from service.");
+      }
     } catch (error) {
-      console.error(`[Savant Card] Error saving scene '${this._selectedScene}' (callService):`, error);
+      console.error(`[Savant Card] Error saving scene '${this._selectedScene}' (callWS):`, error);
       this._showToast("Error saving scene: " + (error.message || error));
     }
   }
