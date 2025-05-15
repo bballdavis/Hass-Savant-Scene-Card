@@ -3,7 +3,6 @@
 This document describes the Home Assistant service API for managing Savant Energy scenes. These services are available via Home Assistant's service call interface and can be called from automations, scripts, or external clients using the Home Assistant API.
 
 ## Service: `savant_energy.create_scene`
-
 Create a new Savant scene. Scene names must be unique (case-insensitive). If a duplicate name is provided, the request will be rejected.
 
 ### Request Schema
@@ -38,7 +37,6 @@ Create a new Savant scene. Scene names must be unique (case-insensitive). If a d
   ```
 
 ## Service: `savant_energy.update_scene`
-
 Update an existing scene's name and/or relay states. This service is used to modify a scene.
 
 ### Request Schema
@@ -85,7 +83,6 @@ Update an existing scene's name and/or relay states. This service is used to mod
   ```
 
 ## Service: `savant_energy.delete_scene`
-
 Delete a scene by its ID. This action is irreversible.
 
 ### Request Schema
@@ -114,8 +111,39 @@ Delete a scene by its ID. This action is irreversible.
   }
   ```
 
-## Service: `savant_energy.get_scenes`
+## Service: `savant_energy.save_scenes`
+Overwrite all scenes in storage and Home Assistant. This is an advanced operation and should only be used for bulk updates.
 
+### Request Schema
+- `scenes` (array, required): List of scene objects, each with `name` and `relay_states`.
+
+#### Example Request
+```json
+{
+  "scenes": [
+    {"name": "Movie Night", "relay_states": {"switch.savant_living_room": true}},
+    {"name": "Party", "relay_states": {"switch.savant_kitchen": true}}
+  ]
+}
+```
+
+### Response
+- On success:
+  ```json
+  {
+    "status": "ok",
+    "count": 2
+  }
+  ```
+- On error:
+  ```json
+  {
+    "status": "error",
+    "message": "..."
+  }
+  ```
+
+## Service: `savant_energy.get_scenes`
 Retrieve all scenes as a list of metadata (scene_id and name only).
 
 ### Response
@@ -132,7 +160,6 @@ Retrieve all scenes as a list of metadata (scene_id and name only).
 ```
 
 ## Service: `savant_energy.get_scene_breakers`
-
 Retrieve the breaker (relay) states for a specific scene, merging saved states with any new breaker switches currently available in Home Assistant. New breakers are added as `false` (off) by default.
 
 ### Request Schema
@@ -164,9 +191,7 @@ Retrieve the breaker (relay) states for a specific scene, merging saved states w
 ---
 
 ## REST API: Get All Scenes
-
 **Endpoint:** `GET /api/savant_energy/scenes`
-
 Returns a list of all Savant scenes (scene_id and name only).
 
 **Example Request:**
@@ -187,9 +212,7 @@ GET /api/savant_energy/scenes
 ---
 
 ## REST API: Get Breaker States for a Scene
-
 **Endpoint:** `GET /api/savant_energy/scene_breakers/{scene_id}`
-
 Returns the breaker (relay) states for a specific scene, merging saved states with any new breaker switches currently available in Home Assistant. New breakers are added as `false` (off) by default.
 
 **Example Request:**
@@ -212,7 +235,7 @@ GET /api/savant_energy/scene_breakers/savant_movie_night
 ---
 
 ## Error Handling
-- All create/update/delete operations will return a JSON object with a `status` key (`ok` or `error`).
+- All create/update/delete/save operations will return a JSON object with a `status` key (`ok` or `error`).
 - On error, a `message` key will provide details.
 
 ## Notes
