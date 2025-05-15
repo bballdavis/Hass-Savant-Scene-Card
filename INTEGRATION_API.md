@@ -1,6 +1,151 @@
-# Savant Energy Integration API
+# Savant Energy Integration REST API
 
-This document describes the Home Assistant service API for managing Savant Energy scenes. These services are available via Home Assistant's service call interface and can be called from automations, scripts, or external clients using the Home Assistant API.
+This section documents the HTTP REST API endpoints for managing Savant Energy scenes. These endpoints are suitable for use by custom Lovelace cards, external clients, or scripts that interact with Home Assistant over HTTP.
+
+---
+
+## REST API: List All Scenes
+**Endpoint:** `GET /api/savant_energy/scenes`
+
+Returns a list of all Savant scenes (scene_id and name only).
+
+**Example Request:**
+```
+GET /api/savant_energy/scenes
+```
+
+**Example Response:**
+```json
+{
+  "scenes": [
+    {"scene_id": "savant_movie_night", "name": "Movie Night"},
+    {"scene_id": "savant_party", "name": "Party"}
+  ]
+}
+```
+
+---
+
+## REST API: Get Breaker States for a Scene
+**Endpoint:** `GET /api/savant_energy/scene_breakers/{scene_id}`
+
+Returns the breaker (relay) states for a specific scene, merging saved states with any new breaker switches currently available in Home Assistant. New breakers are added as `false` (off) by default.
+
+**Example Request:**
+```
+GET /api/savant_energy/scene_breakers/savant_movie_night
+```
+
+**Example Response:**
+```json
+{
+  "scene_id": "savant_movie_night",
+  "breakers": {
+    "switch.breaker_living_room": true,
+    "switch.breaker_kitchen": false,
+    "switch.breaker_new": false
+  }
+}
+```
+
+---
+
+## REST API: Create a Scene
+**Endpoint:** `POST /api/savant_energy/scenes`
+
+Creates a new Savant scene. Scene names must be unique (case-insensitive).
+
+**Request Body:**
+```json
+{
+  "name": "Movie Night",
+  "relay_states": {
+    "switch.savant_living_room": true,
+    "switch.savant_kitchen": false
+  }
+}
+```
+
+**Success Response:**
+```json
+{
+  "status": "ok",
+  "scene_id": "savant_movie_night"
+}
+```
+**Error Response:**
+```json
+{
+  "status": "error",
+  "message": "A scene with the name 'Movie Night' already exists."
+}
+```
+
+---
+
+## REST API: Update a Scene
+**Endpoint:** `POST /api/savant_energy/scenes/{scene_id}`
+
+Updates an existing scene's name and/or relay states.
+
+**Request Body:**
+```json
+{
+  "name": "Cinema Mode",
+  "relay_states": {
+    "switch.savant_living_room_lights": true,
+    "switch.savant_hallway_lights": false
+  }
+}
+```
+
+**Success Response:**
+```json
+{
+  "status": "ok",
+  "scene_id": "savant_movie_night"
+}
+```
+**Error Response:**
+```json
+{
+  "status": "error",
+  "message": "Scene savant_movie_night not found."
+}
+```
+
+---
+
+## REST API: Delete a Scene
+**Endpoint:** `DELETE /api/savant_energy/scenes/{scene_id}`
+
+Deletes a scene by its ID. This action is irreversible.
+
+**Example Request:**
+```
+DELETE /api/savant_energy/scenes/savant_movie_night
+```
+
+**Success Response:**
+```json
+{
+  "status": "ok",
+  "scene_id": "savant_movie_night"
+}
+```
+**Error Response:**
+```json
+{
+  "status": "error",
+  "message": "Scene savant_movie_night not found."
+}
+```
+
+---
+
+# Home Assistant Service API
+
+This section documents the Home Assistant service API for managing Savant Energy scenes. These services are available via Home Assistant's service call interface and can be called from automations, scripts, or external clients using the Home Assistant API.
 
 ## Service: `savant_energy.create_scene`
 Create a new Savant scene. Scene names must be unique (case-insensitive). If a duplicate name is provided, the request will be rejected.
@@ -177,50 +322,6 @@ Retrieve the breaker (relay) states for a specific scene, merging saved states w
 ```
 
 #### Example Response
-```json
-{
-  "scene_id": "savant_movie_night",
-  "breakers": {
-    "switch.breaker_living_room": true,
-    "switch.breaker_kitchen": false,
-    "switch.breaker_new": false
-  }
-}
-```
-
----
-
-## REST API: Get All Scenes
-**Endpoint:** `GET /api/savant_energy/scenes`
-Returns a list of all Savant scenes (scene_id and name only).
-
-**Example Request:**
-```
-GET /api/savant_energy/scenes
-```
-
-**Example Response:**
-```json
-{
-  "scenes": [
-    {"scene_id": "savant_movie_night", "name": "Movie Night"},
-    {"scene_id": "savant_party", "name": "Party"}
-  ]
-}
-```
-
----
-
-## REST API: Get Breaker States for a Scene
-**Endpoint:** `GET /api/savant_energy/scene_breakers/{scene_id}`
-Returns the breaker (relay) states for a specific scene, merging saved states with any new breaker switches currently available in Home Assistant. New breakers are added as `false` (off) by default.
-
-**Example Request:**
-```
-GET /api/savant_energy/scene_breakers/savant_movie_night
-```
-
-**Example Response:**
 ```json
 {
   "scene_id": "savant_movie_night",

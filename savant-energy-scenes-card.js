@@ -45,10 +45,11 @@ class SavantEnergyScenesCard extends HTMLElement {
   async _fetchScenesFromBackend(triggerRender = true) {
     console.log(`[Savant Card] _fetchScenesFromBackend called. triggerRender: ${triggerRender}`);
     try {
-      // Use REST API as per integration docs
-      const resp = await this._hass.callApi("GET", "savant_energy/scenes");
+      // Use correct REST API endpoint: GET /api/savant_energy/scenes
+      const resp = await this._hass.callApi("GET", "api/savant_energy/scenes");
       if (resp && resp.scenes) {
-        this._scenes = [...resp.scenes];
+        // API returns array of {scene_id, name}
+        this._scenes = resp.scenes.map(s => ({ id: s.scene_id, name: s.name }));
         console.info("[Savant Card] Scenes fetched:", this._scenes.length, "scenes");
       } else {
         this._scenes = [];
@@ -71,9 +72,8 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
-      // Use REST API as per integration docs
-      const result = await this._hass.callApi("GET", `savant_energy/scene_breakers/${sceneId}`);
-      console.info(`[Savant Card] Raw get_scene_breakers API response (callApi) for scene '${sceneId}':`, result);
+      // Use correct REST API endpoint: GET /api/savant_energy/scene_breakers/{scene_id}
+      const result = await this._hass.callApi("GET", `api/savant_energy/scene_breakers/${sceneId}`);
       if (result && result.breakers && typeof result.breakers === 'object') {
         this._entities = Object.keys(result.breakers).map(entity_id => {
           const stateObj = this._hass.states[entity_id];
@@ -91,11 +91,9 @@ class SavantEnergyScenesCard extends HTMLElement {
           };
         });
         this._relayStates = { ...result.breakers };
-        console.info(`[Savant Card] Retrieved breakers for scene '${sceneId}':`, this._relayStates);
       } else {
         this._entities = [];
         this._relayStates = {};
-        console.warn(`[Savant Card] No breakers returned or unexpected format from backend for scene '${sceneId}' via callApi.`, result);
       }
     } catch (e) {
       this._entities = [];
@@ -206,24 +204,20 @@ class SavantEnergyScenesCard extends HTMLElement {
   async _onCreateScene() {
     const newSceneNameFromPrompt = prompt("Enter the name for the new scene:", "New Scene");
     if (!newSceneNameFromPrompt || !newSceneNameFromPrompt.trim()) {
-      console.log("[Savant Card] Scene creation cancelled or empty name provided.");
       return;
     }
     const newSceneName = newSceneNameFromPrompt.trim();
-    console.log(`[Savant Card] _onCreateScene: Attempting to create scene with name '${newSceneName}'`);
-
     try {
-      // Use REST API as per integration docs
-      const resp = await this._hass.callApi("POST", "savant_energy/create_scene", {
+      // Use correct REST API endpoint: POST /api/savant_energy/scenes
+      const resp = await this._hass.callApi("POST", "api/savant_energy/scenes", {
         name: newSceneName,
         relay_states: this._relayStates || {},
       });
-      console.log(`[Savant Card] _onCreateScene: Backend call 'create_scene' complete. Result:`, JSON.stringify(resp));
       if (resp && resp.status === "ok" && resp.scene_id) {
         await this._fetchScenesFromBackend(false);
         this._selectedScene = resp.scene_id;
-        const newSceneDetails = this._scenes.find(s => s.id === resp.scene_id || s.scene_id === resp.scene_id);
-        this._sceneName = newSceneDetails ? (newSceneDetails.name || newSceneName) : newSceneName;
+        const newSceneDetails = this._scenes.find(s => s.id === resp.scene_id);
+        this._sceneName = newSceneDetails ? newSceneDetails.name : newSceneName;
         await this._fetchBreakersForEditor(this._selectedScene);
         this._safeRender();
         this._hass.callService('notify', 'persistent_notification', {
@@ -233,12 +227,10 @@ class SavantEnergyScenesCard extends HTMLElement {
         this._errorMessage = "";
       } else {
         const errorMsg = resp && resp.message ? resp.message : "Unknown error from backend.";
-        console.error(`[Savant Card] Failed to create scene. Backend response: ${errorMsg}`, resp);
         this._errorMessage = "Failed to create scene: " + errorMsg;
         this._safeRender();
       }
     } catch (e) {
-      console.error("[Savant Card] Error creating scene in _onCreateScene:", e);
       this._errorMessage = "Error creating scene: " + (e.message || "Unknown error");
       this._safeRender();
     }
@@ -252,15 +244,16 @@ class SavantEnergyScenesCard extends HTMLElement {
     }
     const newName = this._sceneName.trim();
     try {
-      // Use REST API as per integration docs
-      const resp = await this._hass.callApi("POST", "savant_energy/update_scene", {
-        scene_id: this._selectedScene,
-        name: newName,
-        relay_states: this._relayStates || {},
-      });
+      // Use correct REST API endpoint: POST /api/savant_energy/scenes/{scene_id}
+      const resp = await this._hass.callApi("POST", `api/savant_energy/scenes/${this._selectedScene}`,
+        {
+          name: newName,
+          relay_states: this._relayStates || {},
+        }
+      );
       if (resp && resp.status === "ok") {
         await this._fetchScenesFromBackend(false);
-        const updated = this._scenes.find(s => s.id === this._selectedScene || s.scene_id === this._selectedScene);
+        const updated = this._scenes.find(s => s.id === this._selectedScene);
         this._sceneName = updated ? updated.name : newName;
         this._safeRender();
         this._hass.callService('notify', 'persistent_notification', {
@@ -280,10 +273,8 @@ class SavantEnergyScenesCard extends HTMLElement {
 
   async _onDeleteScene(sceneId) {
     try {
-      // Use REST API as per integration docs
-      const resp = await this._hass.callApi("POST", "savant_energy/delete_scene", {
-        scene_id: sceneId,
-      });
+      // Use correct REST API endpoint: DELETE /api/savant_energy/scenes/{scene_id}
+      const resp = await this._hass.callApi("DELETE", `api/savant_energy/scenes/${sceneId}`);
       if (resp && resp.status === "ok") {
         await this._fetchScenesFromBackend(false);
         if (this._selectedScene === sceneId) {
