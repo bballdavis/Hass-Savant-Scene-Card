@@ -257,9 +257,8 @@ export class SavantEnergyScenesCardEditor extends HTMLElement {
   }
 }
 
-import { SavantEnergyApi } from './savant-energy-api.js';
-import { cardStyle } from './savant-energy-card-style.js';
-import { SavantEnergyScenesCardEditor } from './savant-energy-card-editor.js';
+
+
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(

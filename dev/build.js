@@ -13,11 +13,21 @@ const PARTS = [
   'savant-energy-card-main.js', // Main card logic (renamed)
 ];
 
+function stripImports(content) {
+  // Remove ES6 import statements
+  return content.replace(/^import .*;\s*$/gm, '');
+}
+
 let output = '';
 for (const part of PARTS) {
   const filePath = path.join(__dirname, part);
   if (fs.existsSync(filePath)) {
-    output += fs.readFileSync(filePath, 'utf8') + '\n';
+    let content = fs.readFileSync(filePath, 'utf8');
+    // Only strip imports from non-API files
+    if (part !== 'savant-energy-api.js') {
+      content = stripImports(content);
+    }
+    output += content + '\n';
   } else {
     console.warn(`Warning: ${part} not found, skipping.`);
   }
