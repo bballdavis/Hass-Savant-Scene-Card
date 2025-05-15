@@ -214,6 +214,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       const result = await this._hass.callWS({
         type: "savant_energy/create_scene",
         name: newSceneName,
+        relay_states: this._relayStates || {}, // Always send relay_states as required by API
       });
       console.log(`[Savant Card] _onCreateScene: Backend call 'create_scene' complete. Result:`, JSON.stringify(result));
 
@@ -269,18 +270,14 @@ class SavantEnergyScenesCard extends HTMLElement {
     
     console.log(`[Savant Card] _onSaveEditor: Saving scene ID '${this._selectedScene}'. Original name: '${originalName}', New name from input: '${newName}'`);
 
-    if (originalName === newName) {
-        console.log("[Savant Card] _onSaveEditor: Scene name hasn't changed. No save action needed.");
-        return;
-    }
-
     try {
-      await this._hass.callWS({
-        type: "savant_energy/update_scene_name",
+      const result = await this._hass.callWS({
+        type: "savant_energy/update_scene", // Use correct API endpoint
         scene_id: this._selectedScene,
         name: newName,
+        relay_states: this._relayStates || {}, // Optionally include relay_states
       });
-      console.log(`[Savant Card] _onSaveEditor: Backend call 'update_scene_name' complete for ID '${this._selectedScene}' with new name '${newName}'`);
+      console.log(`[Savant Card] _onSaveEditor: Backend call 'update_scene' complete for ID '${this._selectedScene}' with new name '${newName}'`);
 
       await this._fetchScenesFromBackend(false);
       console.log(`[Savant Card] _onSaveEditor: _fetchScenesFromBackend complete. Scenes count: ${this._scenes.length}`);
