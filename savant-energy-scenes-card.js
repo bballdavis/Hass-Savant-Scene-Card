@@ -45,8 +45,8 @@ class SavantEnergyScenesCard extends HTMLElement {
   async _fetchScenesFromBackend(triggerRender = true) {
     console.log(`[Savant Card] _fetchScenesFromBackend called. triggerRender: ${triggerRender}`);
     try {
-      // Use correct REST API endpoint: GET /api/savant_energy/scenes
-      const resp = await this._hass.callApi("GET", "api/savant_energy/scenes");
+      // Use correct REST API endpoint: GET /savant_energy/scenes
+      const resp = await this._hass.callApi("GET", "savant_energy/scenes");
       if (resp && resp.scenes) {
         // API returns array of {scene_id, name}
         this._scenes = resp.scenes.map(s => ({ id: s.scene_id, name: s.name }));
@@ -72,8 +72,8 @@ class SavantEnergyScenesCard extends HTMLElement {
       return;
     }
     try {
-      // Use correct REST API endpoint: GET /api/savant_energy/scene_breakers/{scene_id}
-      const result = await this._hass.callApi("GET", `api/savant_energy/scene_breakers/${sceneId}`);
+      // Use correct REST API endpoint: GET /savant_energy/scene_breakers/{scene_id}
+      const result = await this._hass.callApi("GET", `savant_energy/scene_breakers/${sceneId}`);
       if (result && result.breakers && typeof result.breakers === 'object') {
         this._entities = Object.keys(result.breakers).map(entity_id => {
           const stateObj = this._hass.states[entity_id];
@@ -208,8 +208,8 @@ class SavantEnergyScenesCard extends HTMLElement {
     }
     const newSceneName = newSceneNameFromPrompt.trim();
     try {
-      // Use correct REST API endpoint: POST /api/savant_energy/scenes
-      const resp = await this._hass.callApi("POST", "api/savant_energy/scenes", {
+      // Use correct REST API endpoint: POST /savant_energy/scenes
+      const resp = await this._hass.callApi("POST", "savant_energy/scenes", {
         name: newSceneName,
         relay_states: this._relayStates || {},
       });
@@ -244,8 +244,8 @@ class SavantEnergyScenesCard extends HTMLElement {
     }
     const newName = this._sceneName.trim();
     try {
-      // Use correct REST API endpoint: POST /api/savant_energy/scenes/{scene_id}
-      const resp = await this._hass.callApi("POST", `api/savant_energy/scenes/${this._selectedScene}`,
+      // Use correct REST API endpoint: POST /savant_energy/scenes/{scene_id}
+      const resp = await this._hass.callApi("POST", `savant_energy/scenes/${this._selectedScene}`,
         {
           name: newName,
           relay_states: this._relayStates || {},
@@ -273,8 +273,8 @@ class SavantEnergyScenesCard extends HTMLElement {
 
   async _onDeleteScene(sceneId) {
     try {
-      // Use correct REST API endpoint: DELETE /api/savant_energy/scenes/{scene_id}
-      const resp = await this._hass.callApi("DELETE", `api/savant_energy/scenes/${sceneId}`);
+      // Use correct REST API endpoint: DELETE /savant_energy/scenes/{scene_id}
+      const resp = await this._hass.callApi("DELETE", `savant_energy/scenes/${sceneId}`);
       if (resp && resp.status === "ok") {
         await this._fetchScenesFromBackend(false);
         if (this._selectedScene === sceneId) {
