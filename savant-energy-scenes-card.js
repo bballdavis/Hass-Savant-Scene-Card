@@ -45,6 +45,7 @@ class SavantEnergyScenesCard extends HTMLElement {
   async _fetchScenesFromBackend(triggerRender = true) {
     console.log(`[Savant Card] _fetchScenesFromBackend called. triggerRender: ${triggerRender}`);
     try {
+      // FIX: Use correct type for Home Assistant WebSocket API
       const scenesData = await this._hass.callWS({ type: "savant_energy/get_scenes" });
       if (scenesData && scenesData.scenes) {
         this._scenes = [...scenesData.scenes]; // Ensure new array instance
@@ -54,6 +55,7 @@ class SavantEnergyScenesCard extends HTMLElement {
         console.warn("[Savant Card] No scenes data returned from backend or format is unexpected.");
       }
     } catch (e) {
+      // FIX: Log the error object for debugging
       console.error("[Savant Card] Error fetching scenes from backend:", e);
       this._scenes = [];
       this._errorMessage = "Error fetching scenes: " + (e.message || "Unknown error");
