@@ -1,7 +1,7 @@
 // API utility for Savant Energy Scenes Card
 // Handles all REST API calls to the Home Assistant backend
 
-export class SavantEnergyApi {
+class SavantEnergyApi {
   constructor(hass) {
     this._hass = hass;
   }
@@ -47,7 +47,7 @@ export class SavantEnergyApi {
 // CSS for Savant Energy Scenes Card
 // Export as a string for easy import
 
-export const cardStyle = `
+const cardStyle = `
   <style>
     .card {
       font-family: var(--primary-font-family);
@@ -226,7 +226,7 @@ export const cardStyle = `
 `;
 
 // Savant Energy Scenes Card Editor (standalone, for modular build)
-export class SavantEnergyScenesCardEditor extends HTMLElement {
+class SavantEnergyScenesCardEditor extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
   }
@@ -256,9 +256,6 @@ export class SavantEnergyScenesCardEditor extends HTMLElement {
     this.render();
   }
 }
-
-
-
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(

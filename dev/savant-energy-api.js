@@ -1,7 +1,7 @@
 // API utility for Savant Energy Scenes Card
 // Handles all REST API calls to the Home Assistant backend
 
-export class SavantEnergyApi {
+class SavantEnergyApi {
   constructor(hass) {
     this._hass = hass;
   }

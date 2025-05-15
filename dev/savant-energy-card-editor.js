@@ -1,5 +1,5 @@
 // Savant Energy Scenes Card Editor (standalone, for modular build)
-export class SavantEnergyScenesCardEditor extends HTMLElement {
+class SavantEnergyScenesCardEditor extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
   }

@@ -1,7 +1,7 @@
 // CSS for Savant Energy Scenes Card
 // Export as a string for easy import
 
-export const cardStyle = `
+const cardStyle = `
   <style>
     .card {
       font-family: var(--primary-font-family);
