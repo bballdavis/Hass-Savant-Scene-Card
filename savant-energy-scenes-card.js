@@ -383,6 +383,22 @@ class SavantEnergyScenesCard extends HTMLElement {
     }
   }
 
+  _showToast(message, type = 'error') {
+    const oldToast = this.shadowRoot.querySelector('.toast');
+    if (oldToast) oldToast.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    this.shadowRoot.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 10);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
   async _onCreateScene() {
     const newSceneName = this._sceneName.trim();
     if (!newSceneName) return;
@@ -391,12 +407,14 @@ class SavantEnergyScenesCard extends HTMLElement {
       await this._fetchScenesFromBackend(false);
       const newScene = this._scenes.find(s => s.name === newSceneName);
       this._selectedScene = newScene ? newScene.id : '';
-      this._sceneName = newSceneName;
+      this._sceneName = '';
       await this._fetchBreakersForEditor(this._selectedScene);
       this._safeRender();
+      this._showToast('Scene created successfully!', 'success');
     } catch (e) {
       this._errorMessage = "Error creating scene: " + (e.message || "Unknown error");
       this._safeRender();
+      this._showToast(this._errorMessage, 'error');
     }
   }
 
@@ -404,6 +422,7 @@ class SavantEnergyScenesCard extends HTMLElement {
     if (!this._selectedScene || !this._sceneName.trim()) {
       this._errorMessage = "Please select a scene and provide a valid name.";
       this._safeRender();
+      this._showToast(this._errorMessage, 'error');
       return;
     }
     const newName = this._sceneName.trim();
@@ -413,9 +432,11 @@ class SavantEnergyScenesCard extends HTMLElement {
       const updated = this._scenes.find(s => s.id === this._selectedScene);
       this._sceneName = updated ? updated.name : newName;
       this._safeRender();
+      this._showToast('Scene updated successfully!', 'success');
     } catch (e) {
       this._errorMessage = "Error updating scene: " + (e.message || e);
       this._safeRender();
+      this._showToast(this._errorMessage, 'error');
     }
   }
 
@@ -430,9 +451,11 @@ class SavantEnergyScenesCard extends HTMLElement {
         this._relayStates = {};
       }
       this._safeRender();
+      this._showToast('Scene deleted successfully!', 'success');
     } catch (e) {
       this._errorMessage = "Error deleting scene: " + (e.message || e);
       this._safeRender();
+      this._showToast(this._errorMessage, 'error');
     }
   }
 
@@ -532,6 +555,34 @@ class SavantEnergyScenesCard extends HTMLElement {
           ${pillToggle}
           ${content || '<div class="card-content">No content available</div>'}
         </div>
+        <style>
+          .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 32px;
+            transform: translateX(-50%) translateY(40px);
+            background: #323232;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.3s, transform 0.3s;
+          }
+          .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+          }
+          .toast-success {
+            background: #4caf50;
+          }
+          .toast-error {
+            background: #e53935;
+          }
+        </style>
       </ha-card>
     `;
     this.shadowRoot.querySelectorAll('.pill').forEach(pill => {
