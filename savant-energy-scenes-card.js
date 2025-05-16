@@ -523,9 +523,19 @@ class SavantEnergyScenesCard extends HTMLElement {
       this._entities.forEach((ent, idx) => {
         const col = idx % 2;
         let displayName = ent.entity_id;
-        if (this._hass && this._hass.states && this._hass.states[ent.entity_id]) {
-          displayName = this._hass.states[ent.entity_id].attributes?.name || ent.entity_id;
+        let stateObj = undefined;
+        if (this._hass && this._hass.states) {
+          stateObj = this._hass.states[ent.entity_id];
+          if (stateObj) {
+            displayName = stateObj.attributes?.name || stateObj.attributes?.friendly_name || ent.entity_id;
+          }
         }
+        // Debug: log entity_id, state object, and resolved display name
+        console.log('[Savant Card] Breaker entity:', {
+          entity_id: ent.entity_id,
+          stateObj,
+          displayName
+        });
         breakerColumns[col].push(`
           <div class="breaker-switch-row">
             <span class="breaker-label" title="${displayName}">${displayName}</span>
