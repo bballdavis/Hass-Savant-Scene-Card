@@ -407,12 +407,13 @@ class SavantEnergyScenesCard extends HTMLElement {
       await this._fetchScenesFromBackend(false);
       const newScene = this._scenes.find(s => s.name === newSceneName);
       this._selectedScene = newScene ? newScene.id : '';
-      this._sceneName = '';
-      await this._fetchBreakersForEditor(this._selectedScene);
+      this._sceneName = ''; // Clear input after creation
+      await this._fetchBreakersForEditor(this._selectedScene); // Fetch breakers for the new scene if selected
       this._safeRender();
       this._showToast('Scene created successfully!', 'success');
     } catch (e) {
-      this._errorMessage = "Error creating scene: " + (e.message || "Unknown error");
+      const detailMessage = (e && typeof e.message === 'string' && e.message) ? e.message : (typeof e === 'string' ? e : "Unknown error");
+      this._errorMessage = "Error creating scene: " + detailMessage;
       this._safeRender();
       this._showToast(this._errorMessage, 'error');
     }
@@ -428,13 +429,15 @@ class SavantEnergyScenesCard extends HTMLElement {
     const newName = this._sceneName.trim();
     try {
       await this.api.updateScene(this._selectedScene, newName, this._relayStates);
-      await this._fetchScenesFromBackend(false);
-      const updated = this._scenes.find(s => s.id === this._selectedScene);
-      this._sceneName = updated ? updated.name : newName;
+      await this._fetchScenesFromBackend(false); // Refresh scene list
+      // Ensure the current scene name reflects the saved name
+      const updatedScene = this._scenes.find(s => s.id === this._selectedScene);
+      this._sceneName = updatedScene ? updatedScene.name : newName;
       this._safeRender();
       this._showToast('Scene updated successfully!', 'success');
     } catch (e) {
-      this._errorMessage = "Error updating scene: " + (e.message || e);
+      const detailMessage = (e && typeof e.message === 'string' && e.message) ? e.message : (typeof e === 'string' ? e : "Unknown error");
+      this._errorMessage = "Error updating scene: " + detailMessage;
       this._safeRender();
       this._showToast(this._errorMessage, 'error');
     }
@@ -443,8 +446,8 @@ class SavantEnergyScenesCard extends HTMLElement {
   async _onDeleteScene(sceneId) {
     try {
       await this.api.deleteScene(sceneId);
-      await this._fetchScenesFromBackend(false);
-      if (this._selectedScene === sceneId) {
+      await this._fetchScenesFromBackend(false); // Refresh the list
+      if (this._selectedScene === sceneId) { // If deleted scene was selected
         this._selectedScene = '';
         this._sceneName = '';
         this._entities = [];
@@ -453,7 +456,8 @@ class SavantEnergyScenesCard extends HTMLElement {
       this._safeRender();
       this._showToast('Scene deleted successfully!', 'success');
     } catch (e) {
-      this._errorMessage = "Error deleting scene: " + (e.message || e);
+      const detailMessage = (e && typeof e.message === 'string' && e.message) ? e.message : (typeof e === 'string' ? e : "Unknown error");
+      this._errorMessage = "Error deleting scene: " + detailMessage;
       this._safeRender();
       this._showToast(this._errorMessage, 'error');
     }
@@ -527,9 +531,9 @@ class SavantEnergyScenesCard extends HTMLElement {
         let stateObj = undefined;
         if (this._hass && this._hass.states) {
           stateObj = this._hass.states[ent.entity_id];
-          if (stateObj) { // Check if stateObj itself is found
-            // Prioritize friendly_name, then name, then entity_id
-            displayName = stateObj.attributes?.friendly_name || stateObj.attributes?.name || ent.entity_id;
+          if (stateObj && stateObj.attributes) { // Check if stateObj and attributes exist
+            // Prioritize name, then entity_id
+            displayName = stateObj.attributes.name || ent.entity_id;
           }
         }
         // Log to debug displayName resolution
@@ -638,40 +642,26 @@ class SavantEnergyScenesCard extends HTMLElement {
       const editorSceneNameInput = this.shadowRoot.querySelector('.scene-name-editor-input');
       const saveButton = this.shadowRoot.querySelector('.save-scene-button');
       if (editorSceneNameInput && saveButton) {
-        editorSceneNameInput.addEventListener('input', e => {
-          this._onSceneNameChange(e);
-          saveButton.disabled = (!this._selectedScene || this._sceneName.trim() === "");
+        editorSceneNameInput.addEventListener('input', e => this._onSceneNameChange(e));
+        saveButton.addEventListener('click', async () => {
+          await this._onSaveEditor();
         });
-        saveButton.addEventListener('click', () => this._onSaveEditor());
       }
-      this.shadowRoot.querySelectorAll('.breaker-switch').forEach(sw => {
-        sw.addEventListener('click', e => {
-          const entityId = sw.getAttribute('data-entity');
+      this.shadowRoot.querySelectorAll('.breaker-switch').forEach(switchEl => {
+        switchEl.addEventListener('click', e => {
+          const entityId = switchEl.getAttribute('data-entity');
           this._onRelayToggle(entityId);
-        });
-        sw.addEventListener('keydown', e => {
-          if (e.key === ' ' || e.key === 'Enter') {
-            e.preventDefault();
-            const entityId = sw.getAttribute('data-entity');
-            this._onRelayToggle(entityId);
-          }
         });
       });
     }
   }
 
-  setConfig(config) {
-    if (!config) {
-      throw new Error("No configuration provided");
-    }
-    this._config = config;
-    this._safeRender();
-  }
-
   getCardSize() {
-    return 3;
+    return 1;
   }
 }
+
+customElements.define("savant-energy-scenes-standalone-card", SavantEnergyScenesCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -680,7 +670,6 @@ window.customCards.push({
   description: "A custom standalone card for Savant Energy scenes."
 });
 
-customElements.define("savant-energy-scenes-standalone-card", SavantEnergyScenesCard);
 customElements.define("savant-energy-scenes-standalone-card-editor", SavantEnergyScenesCardEditor);
 
 
