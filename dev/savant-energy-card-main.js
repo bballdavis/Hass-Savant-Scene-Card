@@ -1,6 +1,6 @@
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.21 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.25 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -158,12 +158,12 @@ class SavantEnergyScenesCard extends HTMLElement {
       await this._fetchScenesFromBackend(false);
       const newScene = this._scenes.find(s => s.name === newSceneName);
       this._selectedScene = newScene ? newScene.id : '';
-      this._sceneName = ''; // Clear input after creation
-      await this._fetchBreakersForEditor(this._selectedScene); // Fetch breakers for the new scene if selected
+      this._sceneName = '';
+      await this._fetchBreakersForEditor(this._selectedScene);
       this._safeRender();
       this._showToast('Scene created successfully!', 'success');
     } catch (e) {
-      const detailMessage = (e && typeof e.message === 'string' && e.message) ? e.message : (typeof e === 'string' ? e : "Unknown error");
+      const detailMessage = this._parseApiErrorMessage(e);
       this._errorMessage = "Error creating scene: " + detailMessage;
       this._safeRender();
       this._showToast(this._errorMessage, 'error');
@@ -180,14 +180,14 @@ class SavantEnergyScenesCard extends HTMLElement {
     const newName = this._sceneName.trim();
     try {
       await this.api.updateScene(this._selectedScene, newName, this._relayStates);
-      await this._fetchScenesFromBackend(false); // Refresh scene list
+      await this._fetchScenesFromBackend(false);
       // Ensure the current scene name reflects the saved name
       const updatedScene = this._scenes.find(s => s.id === this._selectedScene);
       this._sceneName = updatedScene ? updatedScene.name : newName;
       this._safeRender();
       this._showToast('Scene updated successfully!', 'success');
     } catch (e) {
-      const detailMessage = (e && typeof e.message === 'string' && e.message) ? e.message : (typeof e === 'string' ? e : "Unknown error");
+      const detailMessage = this._parseApiErrorMessage(e);
       this._errorMessage = "Error updating scene: " + detailMessage;
       this._safeRender();
       this._showToast(this._errorMessage, 'error');
@@ -197,17 +197,17 @@ class SavantEnergyScenesCard extends HTMLElement {
   async _onDeleteScene(sceneId) {
     try {
       await this.api.deleteScene(sceneId);
-      await this._fetchScenesFromBackend(false); // Refresh the list
-      if (this._selectedScene === sceneId) { // If deleted scene was selected
-        this._selectedScene = '';
-        this._sceneName = '';
+      await this._fetchScenesFromBackend(false);
+      if (this._selectedScene === sceneId) {
+        this._selectedScene = null;
+        this._sceneName = "";
         this._entities = [];
         this._relayStates = {};
       }
       this._safeRender();
       this._showToast('Scene deleted successfully!', 'success');
     } catch (e) {
-      const detailMessage = (e && typeof e.message === 'string' && e.message) ? e.message : (typeof e === 'string' ? e : "Unknown error");
+      const detailMessage = this._parseApiErrorMessage(e);
       this._errorMessage = "Error deleting scene: " + detailMessage;
       this._safeRender();
       this._showToast(this._errorMessage, 'error');
@@ -217,6 +217,37 @@ class SavantEnergyScenesCard extends HTMLElement {
   _onRelayToggle(entityId) {
     this._relayStates[entityId] = !this._relayStates[entityId];
     this._safeRender();
+  }
+
+  _parseApiErrorMessage(e) {
+    let detailMessage = "Unknown error"; // Default message
+    if (e) {
+      if (typeof e.message === 'string') {
+        try {
+          // Attempt to parse e.message as JSON
+          const errorResponse = JSON.parse(e.message);
+          if (errorResponse && typeof errorResponse.message === 'string') {
+            // If parsing is successful and errorResponse.message is a string, use it
+            detailMessage = errorResponse.message;
+          } else {
+            // Parsed, but no 'message' field or not the expected structure.
+            // Fallback to the original e.message (which is the JSON string).
+            detailMessage = e.message;
+          }
+        } catch (parseError) {
+          // JSON.parse failed, so e.message is likely a plain error string, not JSON.
+          // Use e.message directly.
+          detailMessage = e.message;
+        }
+      } else if (typeof e === 'string') {
+        // If e itself is a string
+        detailMessage = e;
+      } else if (e.error && typeof e.error === 'string') {
+        // Fallback for other possible error structures like { error: "some error message" }
+        detailMessage = e.error;
+      }
+    }
+    return detailMessage;
   }
 
   _safeRender() {
