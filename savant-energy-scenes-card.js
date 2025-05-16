@@ -522,10 +522,13 @@ class SavantEnergyScenesCard extends HTMLElement {
       const breakerColumns = [[], []];
       this._entities.forEach((ent, idx) => {
         const col = idx % 2;
-        const friendlyName = ent.attributes?.name || ent.entity_id;
+        let displayName = ent.entity_id;
+        if (this._hass && this._hass.states && this._hass.states[ent.entity_id]) {
+          displayName = this._hass.states[ent.entity_id].attributes?.name || ent.entity_id;
+        }
         breakerColumns[col].push(`
           <div class="breaker-switch-row">
-            <span class="breaker-label" title="${friendlyName}">${friendlyName}</span>
+            <span class="breaker-label" title="${displayName}">${displayName}</span>
             <div class="breaker-switch${this._relayStates[ent.entity_id] !== false ? ' on' : ' off'}" data-entity="${ent.entity_id}" tabindex="0" role="switch" aria-checked="${this._relayStates[ent.entity_id] !== false}">
               <div class="breaker-switch-thumb"></div>
             </div>
