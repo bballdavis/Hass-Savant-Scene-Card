@@ -591,12 +591,31 @@ class SavantEnergyScenesCard extends HTMLElement {
       // Sort entities alphabetically by display name for breaker list
       let entitiesWithNames = this._entities.map(ent => {
         let displayName = ent.entity_id;
-        // Use Home Assistant state object to get the friendly name
+        let logReason = '';
         if (this._hass && this._hass.states && this._hass.states[ent.entity_id]) {
           const stateObj = this._hass.states[ent.entity_id];
-          // Prefer 'friendly_name', then 'name', then entity_id
-          displayName = stateObj.attributes.friendly_name || stateObj.attributes.name || ent.entity_id;
+          if (stateObj && stateObj.attributes) {
+            if (stateObj.attributes.friendly_name) {
+              displayName = stateObj.attributes.friendly_name;
+              logReason = 'Used friendly_name';
+            } else if (stateObj.attributes.name) {
+              displayName = stateObj.attributes.name;
+              logReason = 'Used name';
+            } else {
+              logReason = 'No friendly_name or name attribute found, using entity_id';
+            }
+          } else {
+            logReason = 'No attributes found on state object, using entity_id';
+          }
+        } else {
+          logReason = 'No state object found for entity_id';
         }
+        console.log('[Savant Card] Breaker entity display:', {
+          entity_id: ent.entity_id,
+          displayName,
+          logReason,
+          stateObj: this._hass && this._hass.states ? this._hass.states[ent.entity_id] : undefined
+        });
         return { ...ent, displayName };
       });
       entitiesWithNames.sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, {sensitivity: 'base'}));
