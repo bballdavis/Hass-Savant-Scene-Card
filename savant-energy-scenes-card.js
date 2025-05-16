@@ -259,7 +259,7 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.20 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.21 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
