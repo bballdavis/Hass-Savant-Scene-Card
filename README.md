@@ -57,3 +57,40 @@ type: custom:savant-energy-scenes-standalone-card
 ## Support
 
 For issues, feature requests, or contributions, please use the GitHub repository.
+
+## Code Overview
+
+This section provides an overview of the main classes and functions implemented in this repository, describing their purpose and usage for developers who wish to understand or extend the card.
+
+### JavaScript Classes & Functions
+
+#### `SavantEnergyApi`
+A utility class that handles all REST API calls to the Home Assistant backend for Savant Energy scenes. It is instantiated with the Home Assistant `hass` object and provides the following methods:
+
+- **fetchScenes()**: Fetches all Savant Energy scenes from the backend. Returns an array of scene objects with `id` and `name`.
+- **fetchBreakers(sceneId)**: Fetches the breaker (relay) states for a specific scene. Returns an object with `entities` (array of entity IDs) and `relayStates` (mapping of entity IDs to boolean states).
+- **createScene(name, relayStates)**: Creates a new scene with the given name and relay states. Returns the backend response.
+- **updateScene(sceneId, name, relayStates)**: Updates an existing scene's name and/or relay states. Returns the backend response.
+- **deleteScene(sceneId)**: Deletes a scene by its ID. Returns the backend response.
+
+#### `SavantEnergyScenesCard`
+The main custom card class, registered as `savant-energy-scenes-standalone-card`. Handles the UI and user interactions for managing Savant Energy scenes. Key features and methods:
+
+- **Scene Management**: Displays a list of scenes, allows selection, creation, editing, and deletion.
+- **Relay Control**: Lets users toggle individual breakers/relays for a scene.
+- **View Switching**: Supports switching between scene list and editor views.
+- **Error Handling & Toasts**: Displays error messages and notifications to the user.
+- **Lifecycle Methods**: Implements Home Assistant card lifecycle, including `set hass`, rendering, and configuration.
+
+#### `SavantEnergyScenesCardEditor`
+A simple configuration editor for the card, registered as `savant-energy-scenes-standalone-card-editor`. Currently, this card does not require configuration options, and the editor displays a static message.
+
+#### Styling
+- The card's CSS is included via `savant-energy-card-style.js`.
+
+### Build Script
+- **build.js**: Concatenates all card modules in the `dev/` directory into a single distributable file (`savant-energy-scenes-card.js`) for use in Home Assistant or HACS. It strips ES6 import statements from non-API files for compatibility.
+
+---
+
+For details on the REST API endpoints and Home Assistant service calls, see [INTEGRATION_API.md](./INTEGRATION_API.md).

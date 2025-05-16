@@ -228,11 +228,11 @@ const cardStyle = `
 // Savant Energy Scenes Card Editor (standalone, for modular build)
 class SavantEnergyScenesCardEditor extends HTMLElement {
   setConfig(config) {
-    this._config = config || {};
+    this.__config = config || {};
   }
 
   get _config() {
-    return this._config;
+    return this.__config;
   }
 
   render() {
