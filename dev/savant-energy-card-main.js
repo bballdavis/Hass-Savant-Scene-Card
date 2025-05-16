@@ -239,6 +239,8 @@ class SavantEnergyScenesCard extends HTMLElement {
       </div>
     `;
     let content = "";
+    // Sort scenes alphabetically by name for all usages
+    const sortedScenes = [...this._scenes].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
     if (this._view === "scenes") {
       content = `
         <div class="scene-controls">
@@ -246,10 +248,10 @@ class SavantEnergyScenesCard extends HTMLElement {
           <button${this._sceneName.trim() === "" ? " disabled" : ""}>Create</button>
         </div>
         <div class="scene-list">
-          ${this._scenes.length === 0 ?
+          ${sortedScenes.length === 0 ?
             '<p>No scenes created yet. Enter a name above and click Create.</p>' :
             `<ul class="scene-items">
-              ${this._scenes.map(s => `<li class="scene-item">
+              ${sortedScenes.map(s => `<li class="scene-item">
                 <span>${s.name}</span>
                 <span class="trash-icon" data-id="${s.id}">
                   <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>
@@ -260,26 +262,32 @@ class SavantEnergyScenesCard extends HTMLElement {
         </div>
       `;
     } else if (this._view === "editor") {
-      const breakerColumns = [[], []];
-      this._entities.forEach((ent, idx) => {
-        const col = idx % 2;
+      // Sort entities alphabetically by display name for breaker list
+      let entitiesWithNames = this._entities.map(ent => {
         let displayName = ent.entity_id;
         let stateObj = undefined;
         if (this._hass && this._hass.states) {
           stateObj = this._hass.states[ent.entity_id];
-          if (stateObj) {
-            displayName = stateObj.attributes?.name || stateObj.attributes?.friendly_name || ent.entity_id;
+          if (stateObj) { // Check if stateObj itself is found
+            // Prioritize friendly_name, then name, then entity_id
+            displayName = stateObj.attributes?.friendly_name || stateObj.attributes?.name || ent.entity_id;
           }
         }
-        // Debug: log entity_id, state object, and resolved display name
-        console.log('[Savant Card] Breaker entity:', {
+        // Log to debug displayName resolution
+        console.log('[Savant Card] Processing Breaker entity for display:', {
           entity_id: ent.entity_id,
-          stateObj,
-          displayName
+          retrieved_stateObj: stateObj,
+          resolved_displayName: displayName
         });
+        return { ...ent, displayName };
+      });
+      entitiesWithNames.sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, {sensitivity: 'base'}));
+      const breakerColumns = [[], []];
+      entitiesWithNames.forEach((ent, idx) => {
+        const col = idx % 2;
         breakerColumns[col].push(`
           <div class="breaker-switch-row">
-            <span class="breaker-label" title="${displayName}">${displayName}</span>
+            <span class="breaker-label" title="${ent.displayName}">${ent.displayName}</span>
             <div class="breaker-switch${this._relayStates[ent.entity_id] !== false ? ' on' : ' off'}" data-entity="${ent.entity_id}" tabindex="0" role="switch" aria-checked="${this._relayStates[ent.entity_id] !== false}">
               <div class="breaker-switch-thumb"></div>
             </div>
@@ -290,7 +298,7 @@ class SavantEnergyScenesCard extends HTMLElement {
         <div class="scene-controls">
           <select class="scene-select input">
             <option value="" ${!this._selectedScene ? "selected" : ""}>Select a scene</option>
-            ${this._scenes.map(s => `<option value="${s.id}" ${this._selectedScene === s.id ? "selected" : ""}>${s.name}</option>`).join("")}
+            ${sortedScenes.map(s => `<option value="${s.id}" ${this._selectedScene === s.id ? "selected" : ""}>${s.name}</option>`).join("")}
           </select>
           <input class="input scene-name-editor-input" type="text" placeholder="Scene name" value="${this._sceneName}" ${!this._selectedScene ? "disabled" : ""}>
           <button class="save-scene-button" ${(!this._selectedScene || !this._sceneName.trim()) ? " disabled" : ""}>Save</button>
