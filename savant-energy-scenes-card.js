@@ -289,6 +289,16 @@ class SavantEnergyScenesCard extends HTMLElement {
     `;
   }
 
+  setConfig(config) {
+    this._config = config;
+    // If the card needs to react to config changes immediately after being set up
+    // and hass is already available, you might trigger a render.
+    // For now, just storing the config is the primary requirement.
+    if (this._hass) {
+      // this._safeRender(); // Uncomment if initial render depends on this config
+    }
+  }
+
   static getConfigElement() {
     return document.createElement("savant-energy-scenes-standalone-card-editor");
   }
