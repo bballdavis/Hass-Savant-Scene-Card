@@ -1,6 +1,6 @@
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.27 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.28 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -221,7 +221,25 @@ class SavantEnergyScenesCard extends HTMLElement {
 
   _parseApiErrorMessage(e) {
     let detailMessage = "Unknown error";
-    // If e is a string, try to parse as JSON, else use as message
+    // Check for a response or body property containing the error JSON
+    let errorPayload = null;
+    if (e && typeof e === 'object') {
+      if (e.response) {
+        errorPayload = e.response;
+      } else if (e.body) {
+        errorPayload = e.body;
+      }
+    }
+    // Try to parse errorPayload if present
+    if (errorPayload) {
+      try {
+        const parsed = typeof errorPayload === 'string' ? JSON.parse(errorPayload) : errorPayload;
+        if (parsed && parsed.message) {
+          return parsed.message;
+        }
+      } catch {}
+    }
+    // Fallback to previous logic
     if (typeof e === 'string') {
       try {
         const parsed = JSON.parse(e);
@@ -234,7 +252,6 @@ class SavantEnergyScenesCard extends HTMLElement {
         detailMessage = e;
       }
     } else if (e && typeof e === 'object') {
-      // If e.message is a stringified JSON, parse it
       if (typeof e.message === 'string') {
         try {
           const parsed = JSON.parse(e.message);
@@ -247,7 +264,6 @@ class SavantEnergyScenesCard extends HTMLElement {
           detailMessage = e.message;
         }
       } else if (e.message) {
-        // If e.message exists (any type), use it
         detailMessage = e.message;
       } else if (e.error && typeof e.error === 'string') {
         detailMessage = e.error;
