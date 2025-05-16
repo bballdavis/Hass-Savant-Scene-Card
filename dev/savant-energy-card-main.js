@@ -1,6 +1,6 @@
 // Register the card in the customCards array - important for Home Assistant to discover the card
 console.info(
-  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.28 ",
+  "%c SAVANT-ENERGY-SCENES-STANDALONE-CARD %c v1.1.30 ",
   "color: white; background: #4CAF50; font-weight: 700;",
   "color: #4CAF50; background: white; font-weight: 700;"
 );
@@ -332,20 +332,12 @@ class SavantEnergyScenesCard extends HTMLElement {
       // Sort entities alphabetically by display name for breaker list
       let entitiesWithNames = this._entities.map(ent => {
         let displayName = ent.entity_id;
-        let stateObj = undefined;
-        if (this._hass && this._hass.states) {
-          stateObj = this._hass.states[ent.entity_id];
-          if (stateObj && stateObj.attributes) { // Check if stateObj and attributes exist
-            // Prioritize name, then entity_id
-            displayName = stateObj.attributes.name || ent.entity_id;
-          }
+        // Use Home Assistant state object to get the friendly name
+        if (this._hass && this._hass.states && this._hass.states[ent.entity_id]) {
+          const stateObj = this._hass.states[ent.entity_id];
+          // Prefer 'friendly_name', then 'name', then entity_id
+          displayName = stateObj.attributes.friendly_name || stateObj.attributes.name || ent.entity_id;
         }
-        // Log to debug displayName resolution
-        console.log('[Savant Card] Processing Breaker entity for display:', {
-          entity_id: ent.entity_id,
-          retrieved_stateObj: stateObj,
-          resolved_displayName: displayName
-        });
         return { ...ent, displayName };
       });
       entitiesWithNames.sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, {sensitivity: 'base'}));
