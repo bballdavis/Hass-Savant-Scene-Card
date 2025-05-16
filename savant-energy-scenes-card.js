@@ -522,7 +522,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       const breakerColumns = [[], []];
       this._entities.forEach((ent, idx) => {
         const col = idx % 2;
-        const friendlyName = ent.attributes?.friendly_name || ent.entity_id;
+        const friendlyName = ent.attributes?.name || ent.entity_id;
         breakerColumns[col].push(`
           <div class="breaker-switch-row">
             <span class="breaker-label" title="${friendlyName}">${friendlyName}</span>
