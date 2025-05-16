@@ -220,24 +220,34 @@ class SavantEnergyScenesCard extends HTMLElement {
   }
 
   _parseApiErrorMessage(e) {
-    let detailMessage = "Unknown error"; // Default message
-    if (e) {
+    let detailMessage = "Unknown error";
+    // If e is a string, try to parse as JSON, else use as message
+    if (typeof e === 'string') {
+      try {
+        const parsed = JSON.parse(e);
+        if (parsed && parsed.message) {
+          detailMessage = parsed.message;
+        } else {
+          detailMessage = e;
+        }
+      } catch {
+        detailMessage = e;
+      }
+    } else if (e && typeof e === 'object') {
+      // If e.message is a stringified JSON, parse it
       if (typeof e.message === 'string') {
         try {
-          // Attempt to parse e.message as JSON
-          const errorResponse = JSON.parse(e.message);
-          if (errorResponse && typeof errorResponse.message === 'string') {
-            detailMessage = errorResponse.message;
+          const parsed = JSON.parse(e.message);
+          if (parsed && parsed.message) {
+            detailMessage = parsed.message;
           } else {
             detailMessage = e.message;
           }
-        } catch (parseError) {
+        } catch {
           detailMessage = e.message;
         }
-      } else if (typeof e === 'string') {
-        detailMessage = e;
-      } else if (e && typeof e.message === 'string') {
-        // e is an object with a message property
+      } else if (e.message) {
+        // If e.message exists (any type), use it
         detailMessage = e.message;
       } else if (e.error && typeof e.error === 'string') {
         detailMessage = e.error;
