@@ -289,8 +289,8 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
   }
 }
 
-if (!customElements.get('savant-energy-scenes-standalone-card-editor')) {
-  customElements.define('savant-energy-scenes-standalone-card-editor', SavantEnergyScenesCardEditor);
+if (!window.customElements.get('savant-energy-scenes-standalone-card-editor')) {
+  window.customElements.define('savant-energy-scenes-standalone-card-editor', SavantEnergyScenesCardEditor);
 }
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
