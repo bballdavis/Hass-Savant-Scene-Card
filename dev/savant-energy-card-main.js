@@ -299,6 +299,7 @@ class SavantEnergyScenesCard extends HTMLElement {
 
   render() {
     if (!this._hass) return;
+    const showHeader = this._config.show_header !== false;
     const pillToggle = `
       <div class="pill-toggle">
         <div class="pill${this._view === 'scenes' ? ' selected' : ''}" data-view="scenes">Scenes</div>
@@ -382,10 +383,11 @@ class SavantEnergyScenesCard extends HTMLElement {
       `;
     }
     this.shadowRoot.innerHTML = `
-      <ha-card>
+      <ha-card${showHeader ? ' header="Savant Energy Scenes Standalone"' : ''}>
+        ${showHeader ? '' : '<!-- header hidden -->'}
         ${cardStyle}
         <div class="card">
-          <div class="header">Savant Energy Scenes Standalone</div>
+          ${showHeader ? '<div class="header">Savant Energy Scenes Standalone</div>' : ''}
           ${pillToggle}
           ${content || '<div class="card-content">No content available</div>'}
         </div>

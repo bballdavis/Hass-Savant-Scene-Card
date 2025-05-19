@@ -229,6 +229,7 @@ const cardStyle = `
 class SavantEnergyScenesCardEditor extends HTMLElement {
   setConfig(config) {
     this.__config = config || {};
+    this.render();
   }
 
   get _config() {
@@ -239,17 +240,37 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
     }
+    const showHeader = this._config.show_header !== false;
     this.shadowRoot.innerHTML = `
       <style>
         ha-switch { padding: 16px 0; }
         .side-by-side { display: flex; }
         .side-by-side > * { flex: 1; padding-right: 4px; }
+        .option-row { display: flex; align-items: center; margin-bottom: 8px; }
+        .option-label { flex: 1; }
       </style>
       <div>
-        <p>Savant Energy Scenes Card has no configuration options.</p>
+        <div class="option-row">
+          <span class="option-label">Show Header</span>
+          <input type="checkbox" class="show-header-toggle" ${showHeader ? 'checked' : ''} />
+        </div>
+        <p>Savant Energy Scenes Card has no other configuration options.</p>
         <p>This card provides an interface for managing Savant Energy scenes.</p>
       </div>
     `;
+    this.shadowRoot.querySelector('.show-header-toggle').addEventListener('change', (e) => {
+      this.__config = { ...this._config, show_header: e.target.checked };
+      this._fireConfigChanged();
+    });
+  }
+
+  _fireConfigChanged() {
+    const event = new CustomEvent('config-changed', {
+      detail: { config: this._config },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
   }
 
   connectedCallback() {
@@ -558,6 +579,7 @@ class SavantEnergyScenesCard extends HTMLElement {
 
   render() {
     if (!this._hass) return;
+    const showHeader = this._config.show_header !== false;
     const pillToggle = `
       <div class="pill-toggle">
         <div class="pill${this._view === 'scenes' ? ' selected' : ''}" data-view="scenes">Scenes</div>
@@ -641,10 +663,11 @@ class SavantEnergyScenesCard extends HTMLElement {
       `;
     }
     this.shadowRoot.innerHTML = `
-      <ha-card>
+      <ha-card${showHeader ? ' header="Savant Energy Scenes"' : ''}>
+        ${showHeader ? '' : '<!-- header hidden -->'}
         ${cardStyle}
         <div class="card">
-          <div class="header">Savant Energy Scenes</div>
+          ${showHeader ? '<div class="header">Savant Energy Scenes</div>' : ''}
           ${pillToggle}
           ${content || '<div class="card-content">No content available</div>'}
         </div>
