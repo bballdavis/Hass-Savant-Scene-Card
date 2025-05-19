@@ -682,7 +682,6 @@ class SavantEnergyScenesCard extends HTMLElement {
         ${showHeader ? '' : '<!-- header hidden -->'}
         ${cardStyle}
         <div class="card">
-          ${showHeader ? '<div class="header">Savant Energy Scenes Standalone</div>' : ''}
           ${pillToggle}
           ${content || '<div class="card-content">No content available</div>'}
         </div>
