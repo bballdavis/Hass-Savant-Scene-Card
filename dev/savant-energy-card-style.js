@@ -13,14 +13,12 @@ const cardStyle = `
     .header {
       font-size: 1.1em;
       font-weight: bold;
-      margin-top: 20px; /* Increased top margin for more buffer */
-      margin-bottom: 12px;
-      margin-left: 16px; /* Increased left margin for more buffer */
+      margin-top: 4px; /* Reduced top margin for minimal buffer */
+      margin-bottom: 4px; /* Reduced bottom margin for less space to selector */
+      margin-left: 4px; /* Reduced left margin for minimal buffer */
       margin-right: 8px;
-      padding-top: 4px; /* Optional: add a bit of top padding */
-      padding-left: 4px; /* Optional: add a bit of left padding */
-      /* Optionally, add padding if you want more space inside the header */
-      /* padding: 8px 0; */
+      padding-top: 0;
+      padding-left: 0;
     }
     .pill-toggle {
       display: flex;
