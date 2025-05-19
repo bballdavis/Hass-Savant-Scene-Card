@@ -6,6 +6,8 @@ const path = require('path');
 
 // Output to project root, not dev/
 const OUT_FILE = path.join(__dirname, '../savant-energy-scenes-card.js');
+const INTEGRATION_DIR = path.join(__dirname, '../integration_version');
+const INTEGRATION_OUT_FILE = path.join(INTEGRATION_DIR, 'savant-energy-scenes-card.js');
 const PARTS = [
   'savant-energy-api.js',
   'savant-energy-card-style.js',
@@ -16,6 +18,22 @@ const PARTS = [
 function stripImports(content) {
   // Remove ES6 import statements
   return content.replace(/^import .*;\s*$/gm, '');
+}
+
+function replaceStandaloneWithCard(content) {
+  // Replace all occurrences of 'standalone' in custom element names, class names, and registration
+  // Only replace in the context of the card name, not in unrelated text
+  return content
+    // Custom element tag
+    .replace(/savant-energy-scenes-standalone-card-editor/g, 'savant-energy-scenes-card-editor')
+    .replace(/savant-energy-scenes-standalone-card/g, 'savant-energy-scenes-card')
+    // Class name (if used)
+    .replace(/SavantEnergyScenesCardEditor/g, 'SavantEnergyScenesCardEditor')
+    .replace(/SavantEnergyScenesCard/g, 'SavantEnergyScenesCard')
+    // Card registration (type, name, description)
+    .replace(/Savant Energy Scenes Standalone Card/g, 'Savant Energy Scenes Card')
+    .replace(/Savant Energy Scenes Standalone/g, 'Savant Energy Scenes')
+    .replace(/standalone/g, 'card'); // fallback for lowercase usages
 }
 
 let output = '';
@@ -35,3 +53,11 @@ for (const part of PARTS) {
 
 fs.writeFileSync(OUT_FILE, output, 'utf8');
 console.log(`Build complete: ${OUT_FILE}`);
+
+// Build integration version
+if (!fs.existsSync(INTEGRATION_DIR)) {
+  fs.mkdirSync(INTEGRATION_DIR);
+}
+let integrationOutput = replaceStandaloneWithCard(output);
+fs.writeFileSync(INTEGRATION_OUT_FILE, integrationOutput, 'utf8');
+console.log(`Integration build complete: ${INTEGRATION_OUT_FILE}`);

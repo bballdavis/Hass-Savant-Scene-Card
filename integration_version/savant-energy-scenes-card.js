@@ -225,7 +225,7 @@ const cardStyle = `
   </style>
 `;
 
-// Savant Energy Scenes Card Editor (standalone, for modular build)
+// Savant Energy Scenes Card Editor (card, for modular build)
 class SavantEnergyScenesCardEditor extends HTMLElement {
   setConfig(config) {
     this.__config = config || {};
@@ -246,7 +246,7 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
         .side-by-side > * { flex: 1; padding-right: 4px; }
       </style>
       <div>
-        <p>Savant Energy Scenes Standalone Card has no configuration options.</p>
+        <p>Savant Energy Scenes Card has no configuration options.</p>
         <p>This card provides an interface for managing Savant Energy scenes.</p>
       </div>
     `;
@@ -283,7 +283,7 @@ class SavantEnergyScenesCard extends HTMLElement {
     this._currentView = "";
     this.api = null;
     this.shadowRoot.innerHTML = `
-      <ha-card header="Savant Energy Scenes Standalone">
+      <ha-card header="Savant Energy Scenes">
         <div class="card-content">Loading...</div>
       </ha-card>
     `;
@@ -300,7 +300,7 @@ class SavantEnergyScenesCard extends HTMLElement {
   }
 
   static getConfigElement() {
-    return document.createElement("savant-energy-scenes-standalone-card-editor");
+    return document.createElement("savant-energy-scenes-card-editor");
   }
 
   static getStubConfig() {
@@ -542,7 +542,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       this._hasInitialRender = true;
     } catch (error) {
       this.shadowRoot.innerHTML = `
-        <ha-card header="Savant Energy Scenes Standalone">
+        <ha-card header="Savant Energy Scenes">
           <div class="card-content">
             <p>Error rendering card. Check the browser console for details.</p>
           </div>
@@ -644,7 +644,7 @@ class SavantEnergyScenesCard extends HTMLElement {
       <ha-card>
         ${cardStyle}
         <div class="card">
-          <div class="header">Savant Energy Scenes Standalone</div>
+          <div class="header">Savant Energy Scenes</div>
           ${pillToggle}
           ${content || '<div class="card-content">No content available</div>'}
         </div>
@@ -729,15 +729,15 @@ class SavantEnergyScenesCard extends HTMLElement {
   }
 }
 
-customElements.define("savant-energy-scenes-standalone-card", SavantEnergyScenesCard);
+customElements.define("savant-energy-scenes-card", SavantEnergyScenesCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "savant-energy-scenes-standalone-card",
-  name: "Savant Energy Scenes Standalone Card",
-  description: "A custom standalone card for Savant Energy scenes."
+  type: "savant-energy-scenes-card",
+  name: "Savant Energy Scenes Card",
+  description: "A custom card card for Savant Energy scenes."
 });
 
-customElements.define("savant-energy-scenes-standalone-card-editor", SavantEnergyScenesCardEditor);
+customElements.define("savant-energy-scenes-card-editor", SavantEnergyScenesCardEditor);
 
 
