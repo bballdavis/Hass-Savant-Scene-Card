@@ -228,8 +228,12 @@ const cardStyle = `
 // Savant Energy Scenes Card Editor (standalone, for modular build)
 class SavantEnergyScenesCardEditor extends HTMLElement {
   setConfig(config) {
-    this.__config = config || {};
+    this.__config = { show_header: true, ...config };
     this.render();
+  }
+
+  getConfig() {
+    return this._config;
   }
 
   get _config() {
@@ -259,18 +263,19 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
       </div>
     `;
     this.shadowRoot.querySelector('.show-header-toggle').addEventListener('change', (e) => {
-      this.__config = { ...this._config, show_header: e.target.checked };
-      this._fireConfigChanged();
+      if (this._config.show_header !== e.target.checked) {
+        this.__config = { ...this._config, show_header: e.target.checked };
+        this._fireConfigChanged();
+      }
     });
   }
 
   _fireConfigChanged() {
-    const event = new CustomEvent('config-changed', {
+    this.dispatchEvent(new CustomEvent('config-changed', {
       detail: { config: this._config },
       bubbles: true,
       composed: true,
-    });
-    this.dispatchEvent(event);
+    }));
   }
 
   connectedCallback() {
