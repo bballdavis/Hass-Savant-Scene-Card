@@ -59,10 +59,12 @@ const cardStyle = `
     .header {
       font-size: 1.1em;
       font-weight: bold;
-      margin-top: 12px;
+      margin-top: 20px; /* Increased top margin for more buffer */
       margin-bottom: 12px;
-      margin-left: 8px;
+      margin-left: 16px; /* Increased left margin for more buffer */
       margin-right: 8px;
+      padding-top: 4px; /* Optional: add a bit of top padding */
+      padding-left: 4px; /* Optional: add a bit of left padding */
       /* Optionally, add padding if you want more space inside the header */
       /* padding: 8px 0; */
     }
@@ -341,7 +343,7 @@ class SavantEnergyScenesCard extends HTMLElement {
   }
 
   static getConfigElement() {
-    return document.createElement("savant-energy-scenes-card-editor-dev");
+    return document.createElement("savant-energy-scenes-card-editor");
   }
 
   static getStubConfig() {
