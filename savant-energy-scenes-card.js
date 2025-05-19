@@ -232,6 +232,12 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
     this.render();
   }
 
+  set hass(hass) {
+    this._hass = hass;
+    // Optionally, re-render if you want to use hass in the editor UI
+    // this.render();
+  }
+
   getConfig() {
     return this._config;
   }
@@ -281,6 +287,10 @@ class SavantEnergyScenesCardEditor extends HTMLElement {
   connectedCallback() {
     this.render();
   }
+}
+
+if (!customElements.get('savant-energy-scenes-standalone-card-editor')) {
+  customElements.define('savant-energy-scenes-standalone-card-editor', SavantEnergyScenesCardEditor);
 }
 
 // Register the card in the customCards array - important for Home Assistant to discover the card
