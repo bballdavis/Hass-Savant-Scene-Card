@@ -351,12 +351,6 @@ class SavantEnergyScenesCard extends HTMLElement {
         } else {
           logReason = 'No state object found for entity_id';
         }
-        console.log('[Savant Card] Breaker entity display:', {
-          entity_id: ent.entity_id,
-          displayName,
-          logReason,
-          stateObj: this._hass && this._hass.states ? this._hass.states[ent.entity_id] : undefined
-        });
         return { ...ent, displayName };
       });
       entitiesWithNames.sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, {sensitivity: 'base'}));

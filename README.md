@@ -15,11 +15,14 @@ A custom Lovelace card for Home Assistant that provides an interface for managin
 ### HACS (Recommended)
 
 1. Make sure you have [HACS](https://hacs.xyz/) installed
-2. Go to HACS → Frontend
-3. Click the "+" button
-4. Search for "Savant Energy Scenes Card"
-5. Click "Install"
-6. Refresh your browser
+2. In HACS, go to "Integrations" or "Frontend" (depending on your HACS version)
+3. Click the three dots menu (⋮) in the top right and select "Custom repositories"
+4. Add this repository: [https://github.com/bballdavis/Hass-Savant-Scene-Card](https://github.com/bballdavis/Hass-Savant-Scene-Card) as a "Lovelace" (or "Frontend") repository
+5. Go to HACS → Frontend
+6. Click the "+" button
+7. Search for "Savant Energy Scenes Card"
+8. Click "Install"
+9. Refresh your browser
 
 ### Manual Installation
 
