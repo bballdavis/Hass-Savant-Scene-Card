@@ -383,8 +383,8 @@ class SavantEnergyScenesCard extends HTMLElement {
       `;
     }
     this.shadowRoot.innerHTML = `
-      <ha-card${showHeader ? ' header="Savant Energy Scenes Standalone"' : ''}>
-        ${showHeader ? '' : '<!-- header hidden -->'}
+      <ha-card>
+        ${showHeader ? '<div class="header">Savant Energy Scenes Standalone</div>' : '<!-- header hidden -->'}
         ${cardStyle}
         <div class="card">
           ${pillToggle}
